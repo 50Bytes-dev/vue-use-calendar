@@ -40,7 +40,6 @@ export function weeklyCalendar<C extends ICalendarDate>(globalOptions: Normalize
       (newWeekIndex, currentWeek) => {
         const year = parseInt(newWeekIndex.toString().slice(0, 4), 10);
         const weekNumber = parseInt(newWeekIndex.toString().slice(4), 10);
-        console.log(newWeekIndex, currentWeek, year, weekNumber);
         return generateWeek({ year, weekNumber }, {
           firstDayOfWeek: globalOptions.firstDayOfWeek,
         }) as Week<C>;
