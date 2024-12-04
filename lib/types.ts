@@ -1,6 +1,6 @@
 import { Locale } from "date-fns";
 import { ComputedRef, Ref, ShallowReactive } from "vue";
-import { CalendarFactory, ICalendarDate } from "./models/CalendarDate";
+import { CalendarFactory, ICalendarDate, SelectionType } from "./models/CalendarDate";
 
 type DateInput = Date | string;
 export type FirstDayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
@@ -49,12 +49,21 @@ export interface Computeds<C extends ICalendarDate> {
   betweenDates: ComputedRef<C[]>;
 }
 
+export interface SelectOptions {
+  strict?: boolean;
+  multiple?: boolean;
+}
+
+export type SelectRangeOptions = Pick<SelectOptions, 'strict' | 'multiple'>;
+export type HoverMultipleOptions = Pick<SelectOptions, 'strict'>;
+
 export interface Listeners<C extends ICalendarDate> {
   selectSingle: (clickedDate: C) => void;
-  selectRange: (clickedDate: C) => void;
+  selectRange: (clickedDate: C, options?: SelectRangeOptions) => void;
   selectMultiple: (clickedDate: C) => void;
-  hoverMultiple: (hoveredDate: C) => void;
+  hoverMultiple: (hoveredDate: C, options?: HoverMultipleOptions) => void;
   resetHover: () => void;
+  resetSelection: () => void;
 }
 
 export interface Selectors<C extends ICalendarDate> extends Listeners<C> {
@@ -82,7 +91,9 @@ export interface Month<C extends ICalendarDate = ICalendarDate> extends WrappedD
 export interface MonthlyCalendarComposable<C extends ICalendarDate> extends CalendarComposable<C> {
   currentMonthAndYear: ShallowReactive<{ month: number; year: number }>;
   currentMonth: ComputedRef<Month<C>>;
+  currentMonthYearIndex: ComputedRef<number>;
   months: ShallowReactive<Month<C>[]>;
+  jumpTo: (i: number) => void;
   nextMonth: () => void;
   prevMonth: () => void;
   nextMonthEnabled: ComputedRef<boolean>;
@@ -101,6 +112,7 @@ export interface WeeklyCalendarComposable<C extends ICalendarDate> extends Calen
   weeks: Array<Week<C>>;
   currentWeekIndex: Ref<number>;
   currentWeek: ComputedRef<Week<C>>;
+  jumpTo: (i: number) => void;
   nextWeek: () => void;
   prevWeek: () => void;
   nextWeekEnabled: ComputedRef<boolean>;

@@ -18,7 +18,7 @@ export function useNavigation<T extends WrappedDays>(daysWrapper: ShallowReactiv
   
   function jumpTo (newWrapperIndex: number) {
     if (newWrapperIndex === currentWrapper.value.index) { return; }
-
+    
     let newIndex = daysWrapper.findIndex(wrap => wrap.index === newWrapperIndex);
     if (infinite && newIndex < 0) {
       const newWrapper = generateWrapper(newWrapperIndex, currentWrapper);
@@ -29,12 +29,14 @@ export function useNavigation<T extends WrappedDays>(daysWrapper: ShallowReactiv
         daysWrapper.push(newWrapper);
         newIndex = daysWrapper.length - 1;
       } else {
+        console.log('splice');
         // daysWrapper.length = 0;
         // daysWrapper = shallowReactive([newWrapper]) as T[];
         daysWrapper.splice(0, daysWrapper.length, newWrapper);
         newIndex = 0;
       }
     }
+    currentWrapperIndex.value = -1;  // to force reactivity update
     currentWrapperIndex.value = Math.max(0, newIndex);
   }
 

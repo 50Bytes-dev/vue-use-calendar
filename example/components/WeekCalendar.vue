@@ -1,12 +1,22 @@
 <template>
   <div class="calendar">
     <h2>Weekly calendar picker</h2>
+    <label>
+      Jump to: 
+      <input
+        v-model.number="currentWeekIndex"
+        placeholder="YYYYww"
+        type="number"
+        @change="jumpToWeek"
+      >
+    </label>
+    <br>
     Selection: 
     <span 
       v-for="selected of selectedDates"
-      :key="selected.dayId"
+      :key="selected"
     >
-      {{ selected.date.toLocaleDateString() }}
+      {{ selected.toLocaleDateString() }}
     </span>
 
     <div class="month">
@@ -18,7 +28,7 @@
           -
         </button>
 
-        {{ currentWeek.month + 1 }} - {{ currentWeek.year }} W:{{ currentWeek.weekNumber + 1 }}
+        {{ currentWeek.month + 1 }} - {{ currentWeek.year }} W:{{ currentWeek.weekNumber }}
 
         <button
           :disabled="!nextWeekEnabled"
@@ -50,6 +60,7 @@ import CalendarCell from './CalendarCell.vue';
 import { useCalendar } from '../../lib/use-calendar';
 import { addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { ref, watch, computed } from 'vue';
 
 const disabledDates = [addDays(new Date(), 10)];
 
@@ -64,9 +75,20 @@ const { useWeeklyCalendar, useWeekdays } = useCalendar({
   preSelection: [addDays(new Date(), 2)],
 });
 
-const { currentWeek, nextWeek, prevWeek, prevWeekEnabled, nextWeekEnabled, listeners, selectedDates } = useWeeklyCalendar();
+const { currentWeek, jumpTo, nextWeek, prevWeek, prevWeekEnabled, nextWeekEnabled, listeners, selectedDates } = useWeeklyCalendar({
+  infinite: false,
+});
 
 const weekdays = useWeekdays();
+const currentWeekIndex = ref(currentWeek.value.index);
+
+const jumpToWeek = () => {
+  jumpTo(currentWeekIndex.value);
+};
+
+watch(() => currentWeek.value, () => {
+  currentWeekIndex.value = currentWeek.value.index;
+}, { immediate: true, deep: true });
 </script>
 
 <style scoped>

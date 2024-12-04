@@ -3,6 +3,7 @@ import { useWeekdays } from "./composables/use-weekdays";
 import { monthlyCalendar } from "./composables/use-monthly-calendar";
 import { weeklyCalendar } from "./composables/use-weekly-calendar";
 import { generateCalendarFactory, ICalendarDate } from "./models/CalendarDate";
+import { unref } from 'vue';
 
 export function useCalendar<C extends ICalendarDate = ICalendarDate> (rawOptions: CalendarOptions<C>): CalendarComposables<C> {
   const options = normalizeGlobalParameters(rawOptions);
@@ -21,7 +22,7 @@ export function normalizeGlobalParameters<C extends ICalendarDate> (opts: Calend
   const minDate: Date | undefined = opts.minDate ? new Date(opts.minDate) : undefined;
   const maxDate: Date | undefined = opts.maxDate ? new Date(opts.maxDate) : undefined;
   const startOn: Date = opts.startOn ? new Date(opts.startOn) : (minDate || new Date());
-  const disabled: Date[] = opts.disabled?.map(dis => new Date(dis)) || [];
+  const disabled: Date[] = unref(unref(opts.disabled))?.map(dis => new Date(dis)) || [];
   const preSelection: Date[] = (Array.isArray(opts.preSelection) ? opts.preSelection : [opts.preSelection]).filter(Boolean) as Array<Date>;
   const factory = generateCalendarFactory(opts.factory);
   const firstDayOfWeek: FirstDayOfWeek = opts.firstDayOfWeek || 0;

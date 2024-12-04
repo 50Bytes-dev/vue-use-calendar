@@ -39,6 +39,8 @@ export function weekGenerators<C extends ICalendarDate> (globalOptions: Normaliz
     const weekDays: C[] = generateConsecutiveDays(startOfWeek(weekRefDay), endOfWeek(weekRefDay));
     const newWeek: Week = weekFactory(weekDays);
 
+    console.log(newWeek);
+
     return newWeek;
   }
 

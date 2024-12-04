@@ -1,5 +1,5 @@
-import { computed, reactive, ShallowReactive, watch, watchEffect } from "vue";
-import { startOfMonth, endOfMonth } from "date-fns";
+import { computed, reactive, ShallowReactive, unref, watch, isRef, watchEffect } from "vue";
+import { startOfMonth, endOfMonth, isSameDay } from "date-fns";
 import { MonthlyCalendarComposable, MontlyOptions, Month, NormalizedCalendarOptions } from '../types';
 import { disableExtendedDates } from "../utils/utils";
 import { dateToMonthYear, ICalendarDate } from "../models/CalendarDate";
@@ -42,6 +42,10 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
       },
       infinite);
 
+    const currentMonthYearIndex = computed(() => {
+      return dateToMonthYear(currentMonthAndYear.year, currentMonthAndYear.month);
+    });
+
     const currentMonthAndYear = reactive({ month: globalOptions.startOn.getMonth(), year: globalOptions.startOn.getFullYear() });
     watch(currentWrapper, (newWrapper) => {
       if (currentMonthAndYear.month === newWrapper.month && currentMonthAndYear.year === newWrapper.year) { return; }
@@ -51,8 +55,7 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
 
     watch(currentMonthAndYear, (newCurrentMonth) => {
       newCurrentMonth.month = Math.min(11, newCurrentMonth.month);
-      const currentMonthYearIndex = dateToMonthYear(currentMonthAndYear.year, currentMonthAndYear.month);
-      jumpTo(currentMonthYearIndex);
+      jumpTo(currentMonthYearIndex.value);
     });
 
     const days = computed(() => daysByMonths.flatMap(month => month.days).filter(Boolean));
@@ -67,8 +70,10 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
     return {
       currentMonth: currentWrapper,
       currentMonthAndYear,
+      currentMonthYearIndex,
       months: daysByMonths,
       days,
+      jumpTo: jumpTo,
       nextMonth: nextWrapper,
       prevMonth: prevWrapper,
       prevMonthEnabled: prevWrapperEnabled,

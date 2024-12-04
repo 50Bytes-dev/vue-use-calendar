@@ -9,6 +9,10 @@
       :class="{
         light: props.day.otherMonth,
         active: props.day.isSelected.value,
+        'active-single': props.day.selectionType.value === 'single',
+        'active-multiple': props.day.selectionType.value === 'multiple',
+        'active-range': props.day.selectionType.value === 'range',
+        'active-range-multiple': props.day.selectionType.value === 'range-multiple',
         hover: props.day.isHovered.value,
         between: props.day.isBetween.value,
         today: props.day.isToday,
@@ -68,7 +72,7 @@ button:not(:disabled).hover {
   background-color: hsl(157, 75%, 78%);
 }
 button.hover:not(:disabled):hover {
-  background-color: hsl(157, 47%, 66%);
+  background-color: hsl(157, 47%, 66%) !important;
 }
 button:not(:disabled).between {
   background-color: hsl(36, 75%, 78%);
