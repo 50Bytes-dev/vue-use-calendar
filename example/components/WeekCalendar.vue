@@ -60,7 +60,7 @@ import CalendarCell from './CalendarCell.vue';
 import { useCalendar } from '../../lib/use-calendar';
 import { addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ref, watch, computed } from 'vue';
+import { ref, watch } from 'vue';
 
 const disabledDates = [addDays(new Date(), 10)];
 

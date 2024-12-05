@@ -11,7 +11,9 @@
       </span>
     </div>
 
-    <button @click="goToCurrentMonth">Today</button>
+    <button @click="goToCurrentMonth">
+      Today
+    </button>
     <select v-model="currentMonthAndYear.year">
       <option
         v-for="year in years"

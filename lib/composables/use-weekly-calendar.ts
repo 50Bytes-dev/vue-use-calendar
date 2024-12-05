@@ -1,4 +1,4 @@
-import { computed, ref, ShallowReactive, watchEffect } from "vue";
+import { computed, ShallowReactive, watchEffect } from "vue";
 import { WeeklyOptions, NormalizedCalendarOptions, WeeklyCalendarComposable, Week } from '../types';
 import { disableExtendedDates } from "../utils/utils";
 import { ICalendarDate } from "../models/CalendarDate";
@@ -37,12 +37,10 @@ export function weeklyCalendar<C extends ICalendarDate>(globalOptions: Normalize
 
     const { currentWrapper, jumpTo, nextWrapper, prevWrapper, prevWrapperEnabled, nextWrapperEnabled } = useNavigation(
       daysByWeeks,
-      (newWeekIndex, currentWeek) => {
+      (newWeekIndex) => {
         const year = parseInt(newWeekIndex.toString().slice(0, 4), 10);
         const weekNumber = parseInt(newWeekIndex.toString().slice(4), 10);
-        return generateWeek({ year, weekNumber }, {
-          firstDayOfWeek: globalOptions.firstDayOfWeek,
-        }) as Week<C>;
+        return generateWeek({ year, weekNumber }) as Week<C>;
       },
       infinite);
 

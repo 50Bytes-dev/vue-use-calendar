@@ -1,5 +1,5 @@
-import { computed, reactive, ShallowReactive, unref, watch, isRef, watchEffect } from "vue";
-import { startOfMonth, endOfMonth, isSameDay } from "date-fns";
+import { computed, reactive, ShallowReactive, watch, watchEffect } from "vue";
+import { startOfMonth, endOfMonth } from "date-fns";
 import { MonthlyCalendarComposable, MontlyOptions, Month, NormalizedCalendarOptions } from '../types';
 import { disableExtendedDates } from "../utils/utils";
 import { dateToMonthYear, ICalendarDate } from "../models/CalendarDate";

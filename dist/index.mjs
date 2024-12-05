@@ -1,35 +1,3 @@
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
-var __objRest = (source, exclude) => {
-  var target = {};
-  for (var prop in source)
-    if (__hasOwnProp.call(source, prop) && exclude.indexOf(prop) < 0)
-      target[prop] = source[prop];
-  if (source != null && __getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(source)) {
-      if (exclude.indexOf(prop) < 0 && __propIsEnum.call(source, prop))
-        target[prop] = source[prop];
-    }
-  return target;
-};
-
 // lib/composables/use-weekdays.ts
 import { addDays, format, nextSunday } from "date-fns";
 function useWeekdays({ firstDayOfWeek, locale }) {
@@ -102,6 +70,8 @@ function generateCalendarFactory(customFactory) {
       isWeekend: weekDay === 0 || weekDay > 6,
       otherMonth: false,
       disabled: ref(false),
+      selectionType: ref(null),
+      rangeSibling: ref(null),
       isSelected: ref(false),
       isBetween: ref(false),
       isHovered: ref(false),
@@ -112,7 +82,7 @@ function generateCalendarFactory(customFactory) {
   };
 }
 function copyCalendarDate(date) {
-  return __spreadProps(__spreadValues({}, date), { _copied: true });
+  return { ...date, _copied: true };
 }
 function dateToMonthYear(dateOrYear, month) {
   if (typeof dateOrYear === "number") {
@@ -130,7 +100,7 @@ function monthFromMonthYear(monthYear) {
 
 // lib/composables/reactiveDates.ts
 import { computed, reactive, watch } from "vue";
-import { isAfter as isAfter2, isBefore as isBefore2, isSameDay as isSameDay2 } from "date-fns";
+import { isSameDay as isSameDay2 } from "date-fns";
 function useComputeds(days) {
   const pureDates = computed(() => {
     return days.value.filter((day) => !day._copied);
@@ -153,62 +123,114 @@ function useComputeds(days) {
 }
 function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
   const selection = reactive([]);
+  const selectionRanges = reactive([]);
   watch(selection, () => {
     days.value.forEach((day) => {
       day.isSelected.value = selection.some((selected) => isSameDay2(selected, day.date));
     });
-    if (selection.length >= 2) {
-      const isAsc = isBefore2(selection[0], selection[1]);
-      const firstOfMonth = isBefore2(days.value[0].date, selection[isAsc ? 0 : 1]) ? null : days.value[0];
-      const lastOfMonth = isAfter2(days.value[days.value.length - 1].date, selection[isAsc ? 1 : 0]) ? null : days.value[days.value.length - 1];
-      const firstDate = days.value.find((day) => isSameDay2(day.date, selection[0])) || (isAsc ? firstOfMonth : days.value[days.value.length - 1]);
-      const secondDate = days.value.find((day) => isSameDay2(day.date, selection[1])) || (isAsc ? lastOfMonth : firstOfMonth);
-      if (firstDate && secondDate) {
-        getBetweenDays(days.value, firstDate, secondDate).forEach((day) => {
-          day.isBetween.value = true;
-        });
+    betweenDates.value.forEach((betweenDate) => {
+      betweenDate.isBetween.value = false;
+    });
+    const selectedDateRanges = [];
+    for (let i = 0; i < selectionRanges.length; i++) {
+      const found = selectedDates.value.find((day) => isSameDay2(day.date, selectionRanges[i]));
+      if (found) {
+        selectedDateRanges.push(found);
       }
-    } else {
-      betweenDates.value.forEach((betweenDate) => {
-        betweenDate.isBetween.value = false;
+    }
+    for (let i = 0; i < selectedDateRanges.length - 1; i += 2) {
+      const firstDate = selectedDateRanges[i];
+      const secondDate = selectedDateRanges[i + 1];
+      if (!firstDate || !secondDate) {
+        continue;
+      }
+      const daysBetween = getBetweenDays(days.value, firstDate, secondDate);
+      daysBetween.forEach((day) => {
+        day.isBetween.value = true;
       });
     }
   });
-  function updateSelection(calendarDate) {
+  function updateSelection(calendarDate, type) {
     const selectedDateIndex = selection.findIndex((date) => isSameDay2(calendarDate.date, date));
     if (selectedDateIndex >= 0) {
+      calendarDate.selectionType.value = null;
       selection.splice(selectedDateIndex, 1);
     } else {
+      calendarDate.selectionType.value = type;
       selection.push(calendarDate.date);
     }
   }
   function selectSingle(clickedDate) {
     const selectedDate = days.value.find((day) => isSameDay2(day.date, selection[0]));
     if (selectedDate) {
-      updateSelection(selectedDate);
+      updateSelection(selectedDate, "single" /* Single */);
     }
-    updateSelection(clickedDate);
+    updateSelection(clickedDate, "single" /* Single */);
   }
-  function selectRange(clickedDate) {
-    if (selection.length >= 2 && !clickedDate.isSelected.value) {
+  function selectRange(clickedDate, options = {}) {
+    const { strict = false, multiple = false } = options;
+    let isValid = true;
+    if (strict) {
+      const selectedDateRanges = [];
+      for (let i = 0; i < selectionRanges.length; i++) {
+        const found = selectedDates.value.find((day) => isSameDay2(day.date, selectionRanges[i]));
+        if (found) {
+          selectedDateRanges.push(found);
+        }
+      }
+      for (let i = 0; i < selectedDateRanges.length; i += 2) {
+        const firstDate = selectedDateRanges[i];
+        const secondDate = selectedDateRanges[i + 1] || clickedDate;
+        if (!firstDate || !secondDate) {
+          continue;
+        }
+        if (!(isSameDay2(firstDate.date, clickedDate.date) || isSameDay2(secondDate.date, clickedDate.date))) {
+          continue;
+        }
+        const daysBetween = getBetweenDays(days.value, firstDate, secondDate);
+        if (daysBetween.some((day) => day.disabled.value || day.isBetween.value)) {
+          isValid = false;
+        }
+      }
+    }
+    if (!multiple && selection.length >= 2 && !clickedDate.isSelected.value) {
       selection.splice(0);
+      selectionRanges.splice(0);
+    }
+    if (!isValid) {
+      selection.splice(-1);
+      selectionRanges.splice(-1);
     }
     clickedDate.isSelected.value = !clickedDate.isSelected.value;
-    updateSelection(clickedDate);
+    updateSelection(clickedDate, "range" /* Range */);
+    selectionRanges.push(clickedDate.date);
   }
   function selectMultiple(clickedDate) {
     clickedDate.isSelected.value = !clickedDate.isSelected.value;
-    updateSelection(clickedDate);
+    updateSelection(clickedDate, "multiple" /* Multiple */);
   }
-  function hoverMultiple(hoveredDate) {
-    if (selectedDates.value.length !== 1) {
+  function hoverMultiple(hoveredDate, options = {}) {
+    const { strict = false } = options;
+    if (selectedDates.value.length % 2 === 0) {
       return;
     }
     hoveredDates.value.forEach((day) => {
       day.isHovered.value = false;
     });
-    const betweenDates2 = getBetweenDays(days.value, selectedDates.value[0], hoveredDate);
-    betweenDates2.forEach((day) => {
+    const lastSelectedDate = selection[selection.length - 1];
+    const lastSelectedCalendarDate = days.value.find((day) => isSameDay2(day.date, lastSelectedDate));
+    if (!lastSelectedCalendarDate) {
+      return;
+    }
+    const datesToHover = [
+      hoveredDate,
+      lastSelectedCalendarDate,
+      ...getBetweenDays(days.value, lastSelectedCalendarDate, hoveredDate)
+    ];
+    if (strict && datesToHover.some((day) => (day.disabled.value || day.isSelected.value || day.isBetween.value) && !isSameDay2(day.date, lastSelectedDate))) {
+      return;
+    }
+    datesToHover.forEach((day) => {
       day.isHovered.value = true;
     });
     hoveredDate.isHovered.value = true;
@@ -218,13 +240,24 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
       day.isHovered.value = false;
     });
   }
+  function resetSelection() {
+    selection.splice(0);
+    selectionRanges.splice(0);
+    selectedDates.value.forEach((day) => {
+      day.isSelected.value = false;
+    });
+    betweenDates.value.forEach((day) => {
+      day.isBetween.value = false;
+    });
+  }
   return {
     selection,
     selectSingle,
     selectRange,
     selectMultiple,
     hoverMultiple,
-    resetHover
+    resetHover,
+    resetSelection
   };
 }
 
@@ -259,6 +292,7 @@ function useNavigation(daysWrapper, generateWrapper, infinite = false) {
         newIndex = 0;
       }
     }
+    currentWrapperIndex.value = -1;
     currentWrapperIndex.value = Math.max(0, newIndex);
   }
   return {
@@ -397,7 +431,10 @@ function monthlyCalendar(globalOptions) {
   const { generateConsecutiveDays, generateMonth, wrapByMonth } = monthGenerators(globalOptions);
   return function useMonthlyCalendar(opts = {}) {
     const { infinite = true, fullWeeks = true, fixedWeeks = false } = opts;
-    const monthlyDays = generateConsecutiveDays(startOfMonth2(globalOptions.startOn), endOfMonth2(globalOptions.maxDate || globalOptions.startOn));
+    const monthlyDays = generateConsecutiveDays(
+      startOfMonth2(globalOptions.startOn),
+      endOfMonth2(globalOptions.maxDate || globalOptions.startOn)
+    );
     const daysByMonths = wrapByMonth(monthlyDays, fullWeeks, fixedWeeks);
     const {
       currentWrapper,
@@ -406,17 +443,24 @@ function monthlyCalendar(globalOptions) {
       prevWrapper,
       prevWrapperEnabled,
       nextWrapperEnabled
-    } = useNavigation(daysByMonths, (newIndex) => {
-      var _a2, _b;
-      const newMonth = generateMonth(newIndex, {
-        otherMonthsDays: !!fullWeeks,
-        fixedWeeks: !!fixedWeeks,
-        beforeMonthDays: ((_a2 = daysByMonths.find((month) => month.index === newIndex - 1)) == null ? void 0 : _a2.days) || [],
-        afterMonthDays: ((_b = daysByMonths.find((month) => month.index === newIndex + 1)) == null ? void 0 : _b.days) || []
-      });
-      selection.splice(0, selection.length, ...selection.reverse());
-      return newMonth;
-    }, infinite);
+    } = useNavigation(
+      daysByMonths,
+      (newIndex) => {
+        var _a, _b;
+        const newMonth = generateMonth(newIndex, {
+          otherMonthsDays: !!fullWeeks,
+          fixedWeeks: !!fixedWeeks,
+          beforeMonthDays: ((_a = daysByMonths.find((month) => month.index === newIndex - 1)) == null ? void 0 : _a.days) || [],
+          afterMonthDays: ((_b = daysByMonths.find((month) => month.index === newIndex + 1)) == null ? void 0 : _b.days) || []
+        });
+        selection.splice(0, selection.length, ...selection.reverse());
+        return newMonth;
+      },
+      infinite
+    );
+    const currentMonthYearIndex = computed3(() => {
+      return dateToMonthYear(currentMonthAndYear.year, currentMonthAndYear.month);
+    });
     const currentMonthAndYear = reactive2({ month: globalOptions.startOn.getMonth(), year: globalOptions.startOn.getFullYear() });
     watch2(currentWrapper, (newWrapper) => {
       if (currentMonthAndYear.month === newWrapper.month && currentMonthAndYear.year === newWrapper.year) {
@@ -427,20 +471,21 @@ function monthlyCalendar(globalOptions) {
     });
     watch2(currentMonthAndYear, (newCurrentMonth) => {
       newCurrentMonth.month = Math.min(11, newCurrentMonth.month);
-      const currentMonthYearIndex = dateToMonthYear(currentMonthAndYear.year, currentMonthAndYear.month);
-      jumpTo(currentMonthYearIndex);
+      jumpTo(currentMonthYearIndex.value);
     });
     const days = computed3(() => daysByMonths.flatMap((month) => month.days).filter(Boolean));
     const computeds = useComputeds(days);
     watchEffect(() => {
       disableExtendedDates(days.value, globalOptions.minDate, globalOptions.maxDate);
     });
-    const _a = useSelectors(computeds.pureDates, computeds.selectedDates, computeds.betweenDates, computeds.hoveredDates), { selection } = _a, listeners = __objRest(_a, ["selection"]);
+    const { selection, ...listeners } = useSelectors(computeds.pureDates, computeds.selectedDates, computeds.betweenDates, computeds.hoveredDates);
     return {
       currentMonth: currentWrapper,
       currentMonthAndYear,
+      currentMonthYearIndex,
       months: daysByMonths,
       days,
+      jumpTo,
       nextMonth: nextWrapper,
       prevMonth: prevWrapper,
       prevMonthEnabled: prevWrapperEnabled,
@@ -452,7 +497,7 @@ function monthlyCalendar(globalOptions) {
 }
 
 // lib/composables/use-weekly-calendar.ts
-import { computed as computed4, ref as ref3, watchEffect as watchEffect2 } from "vue";
+import { computed as computed4, watchEffect as watchEffect2 } from "vue";
 import { endOfWeek as endOfWeek3, startOfWeek as startOfWeek3 } from "date-fns";
 
 // lib/utils/utils.week.ts
@@ -477,7 +522,7 @@ function weekGenerators(globalOptions) {
     ].filter((chunk2) => chunk2.length > 0).map(weekFactory);
     return weeks;
   }
-  function generateWeek(weekYearId, options) {
+  function generateWeek(weekYearId) {
     const weekRefDay = new Date(weekYearId.year, 0, weekYearId.weekNumber * 7);
     const weekDays = generateConsecutiveDays(startOfWeek2(weekRefDay), endOfWeek2(weekRefDay));
     const newWeek = weekFactory(weekDays);
@@ -497,29 +542,37 @@ var DEFAULT_MONTLY_OPTS = {
 function weeklyCalendar(globalOptions) {
   const { generateConsecutiveDays, wrapByWeek, generateWeek } = weekGenerators(globalOptions);
   return function useWeeklyCalendar(opts) {
-    const { infinite } = __spreadValues(__spreadValues({}, DEFAULT_MONTLY_OPTS), opts);
-    const weeklyDays = generateConsecutiveDays(startOfWeek3(globalOptions.startOn, { weekStartsOn: globalOptions.firstDayOfWeek }), endOfWeek3(globalOptions.maxDate || globalOptions.startOn, { weekStartsOn: globalOptions.firstDayOfWeek }));
+    const { infinite } = { ...DEFAULT_MONTLY_OPTS, ...opts };
+    const weeklyDays = generateConsecutiveDays(
+      startOfWeek3(globalOptions.startOn, { weekStartsOn: globalOptions.firstDayOfWeek }),
+      endOfWeek3(globalOptions.maxDate || globalOptions.startOn, { weekStartsOn: globalOptions.firstDayOfWeek })
+    );
     disableExtendedDates(weeklyDays, globalOptions.minDate, globalOptions.maxDate);
     const daysByWeeks = wrapByWeek(weeklyDays);
     const days = computed4(() => daysByWeeks.flatMap((week) => week.days));
     watchEffect2(() => {
       disableExtendedDates(weeklyDays, globalOptions.minDate, globalOptions.maxDate);
     });
-    const currentWeekIndex = ref3(0);
-    const { currentWrapper, nextWrapper, prevWrapper, prevWrapperEnabled, nextWrapperEnabled } = useNavigation(daysByWeeks, (newWeekIndex, currentWeek) => {
-      const year = parseInt(newWeekIndex.toString().slice(0, 4), 10);
-      const weekNumber = parseInt(newWeekIndex.toString().slice(4), 10);
-      return generateWeek({ year, weekNumber }, {
-        firstDayOfWeek: globalOptions.firstDayOfWeek
-      });
-    }, infinite);
+    const currentWeekIndex = computed4(() => {
+      return currentWrapper.value.index;
+    });
+    const { currentWrapper, jumpTo, nextWrapper, prevWrapper, prevWrapperEnabled, nextWrapperEnabled } = useNavigation(
+      daysByWeeks,
+      (newWeekIndex) => {
+        const year = parseInt(newWeekIndex.toString().slice(0, 4), 10);
+        const weekNumber = parseInt(newWeekIndex.toString().slice(4), 10);
+        return generateWeek({ year, weekNumber });
+      },
+      infinite
+    );
     const computeds = useComputeds(days);
-    const _a = useSelectors(days, computeds.selectedDates, computeds.betweenDates, computeds.hoveredDates), { selection } = _a, selectors = __objRest(_a, ["selection"]);
+    const { selection, ...selectors } = useSelectors(days, computeds.selectedDates, computeds.betweenDates, computeds.hoveredDates);
     return {
       currentWeek: currentWrapper,
       currentWeekIndex,
       days,
       weeks: daysByWeeks,
+      jumpTo,
       nextWeek: nextWrapper,
       prevWeek: prevWrapper,
       prevWeekEnabled: prevWrapperEnabled,
@@ -531,6 +584,7 @@ function weeklyCalendar(globalOptions) {
 }
 
 // lib/use-calendar.ts
+import { unref } from "vue";
 function useCalendar(rawOptions) {
   const options = normalizeGlobalParameters(rawOptions);
   const useMonthlyCalendar = monthlyCalendar(options);
@@ -546,11 +600,11 @@ function normalizeGlobalParameters(opts) {
   const minDate = opts.minDate ? new Date(opts.minDate) : void 0;
   const maxDate = opts.maxDate ? new Date(opts.maxDate) : void 0;
   const startOn = opts.startOn ? new Date(opts.startOn) : minDate || new Date();
-  const disabled = ((_a = opts.disabled) == null ? void 0 : _a.map((dis) => new Date(dis))) || [];
+  const disabled = ((_a = unref(unref(opts.disabled))) == null ? void 0 : _a.map((dis) => new Date(dis))) || [];
   const preSelection = (Array.isArray(opts.preSelection) ? opts.preSelection : [opts.preSelection]).filter(Boolean);
   const factory = generateCalendarFactory(opts.factory);
   const firstDayOfWeek = opts.firstDayOfWeek || 0;
-  return __spreadProps(__spreadValues({}, opts), { startOn, firstDayOfWeek, minDate, maxDate, disabled, preSelection, factory });
+  return { ...opts, startOn, firstDayOfWeek, minDate, maxDate, disabled, preSelection, factory };
 }
 export {
   dateToMonthYear,

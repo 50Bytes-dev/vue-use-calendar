@@ -34,7 +34,7 @@ export function weekGenerators<C extends ICalendarDate> (globalOptions: Normaliz
     return weeks;
   }
 
-  function generateWeek (weekYearId: WeekId, options: Partial<any>): Week {
+  function generateWeek (weekYearId: WeekId): Week {
     const weekRefDay = new Date(weekYearId.year, 0, weekYearId.weekNumber * 7);
     const weekDays: C[] = generateConsecutiveDays(startOfWeek(weekRefDay), endOfWeek(weekRefDay));
     const newWeek: Week = weekFactory(weekDays);

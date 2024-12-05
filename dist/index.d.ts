@@ -1,10 +1,17 @@
 import { Locale } from 'date-fns';
 import { Ref, ComputedRef, ShallowReactive } from 'vue';
 
+declare enum SelectionType {
+    Single = "single",
+    Multiple = "multiple",
+    Range = "range"
+}
 interface ICalendarDate {
     readonly date: Date;
     otherMonth: boolean;
     disabled: Ref<boolean>;
+    selectionType: Ref<SelectionType | null>;
+    rangeSibling: Ref<Date | null>;
     isSelected: Ref<boolean>;
     isBetween: Ref<boolean>;
     isHovered: Ref<boolean>;
@@ -14,14 +21,14 @@ interface ICalendarDate {
     dayId: string;
     _copied: boolean;
 }
-declare type CalendarFactory<C extends ICalendarDate> = (...args: any[]) => C;
+type CalendarFactory<C extends ICalendarDate> = (...args: any[]) => C;
 declare function dateToMonthYear(dateOrYear: Date | number, month?: number): number;
 declare function yearFromMonthYear(monthYear: number): number;
 declare function monthFromMonthYear(monthYear: number): number;
 
-declare type DateInput = Date | string;
-declare type FirstDayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
-declare type WeekdayInputFormat = 'i' | 'io' | 'ii' | 'iii' | 'iiii' | 'iiiii' | 'iiiiii';
+type DateInput = Date | string;
+type FirstDayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+type WeekdayInputFormat = 'i' | 'io' | 'ii' | 'iii' | 'iiii' | 'iiiii' | 'iiiiii';
 interface CalendarComposables<C extends ICalendarDate> {
     useWeekdays: (weekdayFormat?: WeekdayInputFormat) => WeekdaysComposable;
     useMonthlyCalendar: (opts?: MontlyOptions) => MonthlyCalendarComposable<C>;
@@ -58,12 +65,19 @@ interface Computeds<C extends ICalendarDate> {
     hoveredDates: ComputedRef<C[]>;
     betweenDates: ComputedRef<C[]>;
 }
+interface SelectOptions {
+    strict?: boolean;
+    multiple?: boolean;
+}
+type SelectRangeOptions = Pick<SelectOptions, 'strict' | 'multiple'>;
+type HoverMultipleOptions = Pick<SelectOptions, 'strict'>;
 interface Listeners<C extends ICalendarDate> {
     selectSingle: (clickedDate: C) => void;
-    selectRange: (clickedDate: C) => void;
+    selectRange: (clickedDate: C, options?: SelectRangeOptions) => void;
     selectMultiple: (clickedDate: C) => void;
-    hoverMultiple: (hoveredDate: C) => void;
+    hoverMultiple: (hoveredDate: C, options?: HoverMultipleOptions) => void;
     resetHover: () => void;
+    resetSelection: () => void;
 }
 interface Selectors<C extends ICalendarDate> extends Listeners<C> {
     selection: Array<Date>;
@@ -87,7 +101,9 @@ interface MonthlyCalendarComposable<C extends ICalendarDate> extends CalendarCom
         year: number;
     }>;
     currentMonth: ComputedRef<Month<C>>;
+    currentMonthYearIndex: ComputedRef<number>;
     months: ShallowReactive<Month<C>[]>;
+    jumpTo: (i: number) => void;
     nextMonth: () => void;
     prevMonth: () => void;
     nextMonthEnabled: ComputedRef<boolean>;
@@ -102,6 +118,7 @@ interface WeeklyCalendarComposable<C extends ICalendarDate> extends CalendarComp
     weeks: Array<Week<C>>;
     currentWeekIndex: Ref<number>;
     currentWeek: ComputedRef<Week<C>>;
+    jumpTo: (i: number) => void;
     nextWeek: () => void;
     prevWeek: () => void;
     nextWeekEnabled: ComputedRef<boolean>;
@@ -110,8 +127,8 @@ interface WeeklyCalendarComposable<C extends ICalendarDate> extends CalendarComp
 interface WeeklyOptions {
     infinite?: boolean;
 }
-declare type WeekdaysComposable = Array<string>;
+type WeekdaysComposable = Array<string>;
 
 declare function useCalendar<C extends ICalendarDate = ICalendarDate>(rawOptions: CalendarOptions<C>): CalendarComposables<C>;
 
-export { CalendarComposables, CalendarOptions, Computeds, FirstDayOfWeek, ICalendarDate, Listeners, Month, MonthlyCalendarComposable, MontlyOptions, NormalizedCalendarOptions, Selectors, Week, WeekdayInputFormat, WeekdaysComposable, WeeklyCalendarComposable, WeeklyOptions, WrappedDays, dateToMonthYear, monthFromMonthYear, useCalendar, yearFromMonthYear };
+export { CalendarComposables, CalendarOptions, Computeds, FirstDayOfWeek, HoverMultipleOptions, ICalendarDate, Listeners, Month, MonthlyCalendarComposable, MontlyOptions, NormalizedCalendarOptions, SelectOptions, SelectRangeOptions, Selectors, Week, WeekdayInputFormat, WeekdaysComposable, WeeklyCalendarComposable, WeeklyOptions, WrappedDays, dateToMonthYear, monthFromMonthYear, useCalendar, yearFromMonthYear };
