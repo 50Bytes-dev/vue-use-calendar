@@ -14,7 +14,7 @@
     Selection: 
     <span 
       v-for="selected of selectedDates"
-      :key="selected"
+      :key="selected.toISOString()"
     >
       {{ selected.toLocaleDateString() }}
     </span>
@@ -64,19 +64,19 @@ import { ref, watch } from 'vue';
 
 const disabledDates = [addDays(new Date(), 10)];
 
-const firstDayOfWeek = 1;
+const firstDayOfWeek = 2;
 
 const { useWeeklyCalendar, useWeekdays } = useCalendar({
-  minDate: new Date(),
-  maxDate: addDays(new Date(), 26),
-  disabled: disabledDates,
+  // minDate: new Date(),
+  // maxDate: addDays(new Date(), 26),
+  // disabled: disabledDates,
   firstDayOfWeek,
-  locale: fr,
-  preSelection: [addDays(new Date(), 2)],
+  // locale: fr,
+  // preSelection: [addDays(new Date(), 2)],
 });
 
 const { currentWeek, jumpTo, nextWeek, prevWeek, prevWeekEnabled, nextWeekEnabled, listeners, selectedDates } = useWeeklyCalendar({
-  infinite: false,
+  infinite: true,
 });
 
 const weekdays = useWeekdays();

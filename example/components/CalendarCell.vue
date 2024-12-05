@@ -9,10 +9,6 @@
       :class="{
         light: props.day.otherMonth,
         active: props.day.isSelected.value,
-        'active-single': props.day.selectionType.value === 'single',
-        'active-multiple': props.day.selectionType.value === 'multiple',
-        'active-range': props.day.selectionType.value === 'range',
-        'active-range-multiple': props.day.selectionType.value === 'range-multiple',
         hover: props.day.isHovered.value,
         between: props.day.isBetween.value,
         today: props.day.isToday,

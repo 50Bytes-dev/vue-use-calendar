@@ -1,6 +1,6 @@
 import { computed, ComputedRef, reactive, watch } from 'vue';
 import { isSameDay } from 'date-fns';
-import { ICalendarDate, SelectionType } from "../models/CalendarDate";
+import { ICalendarDate } from "../models/CalendarDate";
 import { Selectors, Computeds, SelectRangeOptions, HoverMultipleOptions } from "../types";
 import { getBetweenDays } from "../utils/utils";
 
@@ -70,13 +70,11 @@ export function useSelectors<C extends ICalendarDate> (
     }
   });
 
-  function updateSelection (calendarDate: C, type: SelectionType) {
+  function updateSelection (calendarDate: C) {
     const selectedDateIndex = selection.findIndex(date => isSameDay(calendarDate.date, date));
     if (selectedDateIndex >= 0) {
-      calendarDate.selectionType.value = null;
       selection.splice(selectedDateIndex, 1);
     } else {
-      calendarDate.selectionType.value = type;
       selection.push(calendarDate.date);
     }
   }
@@ -84,9 +82,9 @@ export function useSelectors<C extends ICalendarDate> (
   function selectSingle(clickedDate: C) {
     const selectedDate = days.value.find(day => isSameDay(day.date, selection[0]));
     if (selectedDate) {
-      updateSelection(selectedDate, SelectionType.Single);
+      updateSelection(selectedDate);
     }
-    updateSelection(clickedDate, SelectionType.Single);
+    updateSelection(clickedDate);
   }
 
   function selectRange(clickedDate: C, options: SelectRangeOptions = {}) {
@@ -126,14 +124,14 @@ export function useSelectors<C extends ICalendarDate> (
     }
 
     clickedDate.isSelected.value = !clickedDate.isSelected.value;
-    updateSelection(clickedDate, SelectionType.Range);
+    updateSelection(clickedDate);
     selectionRanges.push(clickedDate.date);
   }
 
 
   function selectMultiple(clickedDate: C) {
     clickedDate.isSelected.value = !clickedDate.isSelected.value;
-    updateSelection(clickedDate, SelectionType.Multiple);
+    updateSelection(clickedDate);
   }
 
   function hoverMultiple(hoveredDate: C, options: HoverMultipleOptions = {}) {

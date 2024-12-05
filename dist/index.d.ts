@@ -1,17 +1,10 @@
 import { Locale } from 'date-fns';
 import { Ref, ComputedRef, ShallowReactive } from 'vue';
 
-declare enum SelectionType {
-    Single = "single",
-    Multiple = "multiple",
-    Range = "range"
-}
 interface ICalendarDate {
     readonly date: Date;
     otherMonth: boolean;
     disabled: Ref<boolean>;
-    selectionType: Ref<SelectionType | null>;
-    rangeSibling: Ref<Date | null>;
     isSelected: Ref<boolean>;
     isBetween: Ref<boolean>;
     isHovered: Ref<boolean>;
@@ -33,6 +26,7 @@ interface CalendarComposables<C extends ICalendarDate> {
     useWeekdays: (weekdayFormat?: WeekdayInputFormat) => WeekdaysComposable;
     useMonthlyCalendar: (opts?: MontlyOptions) => MonthlyCalendarComposable<C>;
     useWeeklyCalendar: (opts?: MontlyOptions) => WeeklyCalendarComposable<C>;
+    factory: CalendarFactory<C>;
 }
 interface CalendarComposable<C extends ICalendarDate> {
     days: ComputedRef<Array<C>>;
@@ -115,8 +109,8 @@ interface Week<C extends ICalendarDate = ICalendarDate> extends WrappedDays<C> {
     year: number;
 }
 interface WeeklyCalendarComposable<C extends ICalendarDate> extends CalendarComposable<C> {
-    weeks: Array<Week<C>>;
-    currentWeekIndex: Ref<number>;
+    weeks: ShallowReactive<Array<Week<C>>>;
+    currentWeekIndex: ComputedRef<number>;
     currentWeek: ComputedRef<Week<C>>;
     jumpTo: (i: number) => void;
     nextWeek: () => void;

@@ -25,7 +25,7 @@ export function weeklyCalendar<C extends ICalendarDate>(globalOptions: Normalize
     disableExtendedDates(weeklyDays, globalOptions.minDate, globalOptions.maxDate);
     
     const daysByWeeks = wrapByWeek(weeklyDays) as ShallowReactive<Week<C>[]>;
-    const days = computed(() => daysByWeeks.flatMap(week => week.days));
+    const days = computed(() => Object.values(daysByWeeks).flatMap(week => week.days));
 
     watchEffect(() => {
       disableExtendedDates(weeklyDays, globalOptions.minDate, globalOptions.maxDate);

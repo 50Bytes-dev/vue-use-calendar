@@ -15,6 +15,7 @@ export function useCalendar<C extends ICalendarDate = ICalendarDate> (rawOptions
     useMonthlyCalendar,
     useWeeklyCalendar,
     useWeekdays: useWeekdays(options),
+    factory: options.factory,
   };
 }
 

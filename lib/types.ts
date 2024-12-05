@@ -1,5 +1,5 @@
 import { Locale } from "date-fns";
-import { ComputedRef, Ref, ShallowReactive } from "vue";
+import { ComputedRef, ShallowReactive } from "vue";
 import { CalendarFactory, ICalendarDate } from "./models/CalendarDate";
 
 type DateInput = Date | string;
@@ -12,6 +12,7 @@ export interface CalendarComposables<C extends ICalendarDate> {
   useWeekdays: (weekdayFormat?: WeekdayInputFormat) => WeekdaysComposable;
   useMonthlyCalendar: (opts?: MontlyOptions) => MonthlyCalendarComposable<C>;
   useWeeklyCalendar: (opts?: MontlyOptions) => WeeklyCalendarComposable<C>;
+  factory: CalendarFactory<C>;
 }
 
 interface CalendarComposable<C extends ICalendarDate> {
@@ -109,8 +110,8 @@ export interface Week<C extends ICalendarDate = ICalendarDate> extends WrappedDa
 }
 
 export interface WeeklyCalendarComposable<C extends ICalendarDate> extends CalendarComposable<C> {
-  weeks: Array<Week<C>>;
-  currentWeekIndex: Ref<number>;
+  weeks: ShallowReactive<Array<Week<C>>>;
+  currentWeekIndex: ComputedRef<number>;
   currentWeek: ComputedRef<Week<C>>;
   jumpTo: (i: number) => void;
   nextWeek: () => void;

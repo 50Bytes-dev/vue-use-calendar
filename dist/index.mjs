@@ -70,8 +70,6 @@ function generateCalendarFactory(customFactory) {
       isWeekend: weekDay === 0 || weekDay > 6,
       otherMonth: false,
       disabled: ref(false),
-      selectionType: ref(null),
-      rangeSibling: ref(null),
       isSelected: ref(false),
       isBetween: ref(false),
       isHovered: ref(false),
@@ -150,22 +148,20 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
       });
     }
   });
-  function updateSelection(calendarDate, type) {
+  function updateSelection(calendarDate) {
     const selectedDateIndex = selection.findIndex((date) => isSameDay2(calendarDate.date, date));
     if (selectedDateIndex >= 0) {
-      calendarDate.selectionType.value = null;
       selection.splice(selectedDateIndex, 1);
     } else {
-      calendarDate.selectionType.value = type;
       selection.push(calendarDate.date);
     }
   }
   function selectSingle(clickedDate) {
     const selectedDate = days.value.find((day) => isSameDay2(day.date, selection[0]));
     if (selectedDate) {
-      updateSelection(selectedDate, "single" /* Single */);
+      updateSelection(selectedDate);
     }
-    updateSelection(clickedDate, "single" /* Single */);
+    updateSelection(clickedDate);
   }
   function selectRange(clickedDate, options = {}) {
     const { strict = false, multiple = false } = options;
@@ -202,12 +198,12 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
       selectionRanges.splice(-1);
     }
     clickedDate.isSelected.value = !clickedDate.isSelected.value;
-    updateSelection(clickedDate, "range" /* Range */);
+    updateSelection(clickedDate);
     selectionRanges.push(clickedDate.date);
   }
   function selectMultiple(clickedDate) {
     clickedDate.isSelected.value = !clickedDate.isSelected.value;
-    updateSelection(clickedDate, "multiple" /* Multiple */);
+    updateSelection(clickedDate);
   }
   function hoverMultiple(hoveredDate, options = {}) {
     const { strict = false } = options;
@@ -267,7 +263,7 @@ function useNavigation(daysWrapper, generateWrapper, infinite = false) {
   const currentWrapperIndex = ref2(0);
   const currentWrapper = computed2(() => daysWrapper[currentWrapperIndex.value]);
   const prevWrapperEnabled = computed2(() => infinite || currentWrapperIndex.value > 0);
-  const nextWrapperEnabled = computed2(() => infinite || currentWrapperIndex.value < daysWrapper.length - 1);
+  const nextWrapperEnabled = computed2(() => infinite || currentWrapperIndex.value < Math.max(...Object.keys(daysWrapper).map(Number)));
   function nextWrapper() {
     jumpTo(currentWrapper.value.index + 1);
   }
@@ -278,22 +274,14 @@ function useNavigation(daysWrapper, generateWrapper, infinite = false) {
     if (newWrapperIndex === currentWrapper.value.index) {
       return;
     }
-    let newIndex = daysWrapper.findIndex((wrap) => wrap.index === newWrapperIndex);
-    if (infinite && newIndex < 0) {
+    const index = daysWrapper.findIndex((day) => day.index === newWrapperIndex);
+    if (index >= 0) {
+      currentWrapperIndex.value = index;
+    } else {
       const newWrapper = generateWrapper(newWrapperIndex, currentWrapper);
-      if (newWrapperIndex === daysWrapper[0].index - 1) {
-        daysWrapper.unshift(newWrapper);
-        newIndex = 0;
-      } else if (newWrapperIndex === daysWrapper[daysWrapper.length - 1].index + 1) {
-        daysWrapper.push(newWrapper);
-        newIndex = daysWrapper.length - 1;
-      } else {
-        daysWrapper.splice(0, daysWrapper.length, newWrapper);
-        newIndex = 0;
-      }
+      daysWrapper.push(newWrapper);
+      currentWrapperIndex.value = daysWrapper.length - 1;
     }
-    currentWrapperIndex.value = -1;
-    currentWrapperIndex.value = Math.max(0, newIndex);
   }
   return {
     jumpTo,
@@ -473,7 +461,8 @@ function monthlyCalendar(globalOptions) {
       newCurrentMonth.month = Math.min(11, newCurrentMonth.month);
       jumpTo(currentMonthYearIndex.value);
     });
-    const days = computed3(() => daysByMonths.flatMap((month) => month.days).filter(Boolean));
+    const days = computed3(() => Object.values(daysByMonths).flatMap((month) => month.days).filter(Boolean));
+    const months = computed3(() => Object.values(daysByMonths));
     const computeds = useComputeds(days);
     watchEffect(() => {
       disableExtendedDates(days.value, globalOptions.minDate, globalOptions.maxDate);
@@ -501,7 +490,7 @@ import { computed as computed4, watchEffect as watchEffect2 } from "vue";
 import { endOfWeek as endOfWeek3, startOfWeek as startOfWeek3 } from "date-fns";
 
 // lib/utils/utils.week.ts
-import { endOfWeek as endOfWeek2, getWeek, startOfWeek as startOfWeek2 } from "date-fns";
+import { endOfWeek as endOfWeek2, getWeek, setWeek, startOfWeek as startOfWeek2 } from "date-fns";
 function weekGenerators(globalOptions) {
   const { generateConsecutiveDays } = generators(globalOptions);
   function weekFactory(weekDays) {
@@ -523,8 +512,11 @@ function weekGenerators(globalOptions) {
     return weeks;
   }
   function generateWeek(weekYearId) {
-    const weekRefDay = new Date(weekYearId.year, 0, weekYearId.weekNumber * 7);
-    const weekDays = generateConsecutiveDays(startOfWeek2(weekRefDay), endOfWeek2(weekRefDay));
+    const weekRefDay = setWeek(new Date(weekYearId.year, 0, 0), weekYearId.weekNumber, { weekStartsOn: globalOptions.firstDayOfWeek });
+    const weekDays = generateConsecutiveDays(
+      startOfWeek2(weekRefDay, { weekStartsOn: globalOptions.firstDayOfWeek }),
+      endOfWeek2(weekRefDay, { weekStartsOn: globalOptions.firstDayOfWeek })
+    );
     const newWeek = weekFactory(weekDays);
     return newWeek;
   }
@@ -549,7 +541,7 @@ function weeklyCalendar(globalOptions) {
     );
     disableExtendedDates(weeklyDays, globalOptions.minDate, globalOptions.maxDate);
     const daysByWeeks = wrapByWeek(weeklyDays);
-    const days = computed4(() => daysByWeeks.flatMap((week) => week.days));
+    const days = computed4(() => Object.values(daysByWeeks).flatMap((week) => week.days));
     watchEffect2(() => {
       disableExtendedDates(weeklyDays, globalOptions.minDate, globalOptions.maxDate);
     });
@@ -592,7 +584,8 @@ function useCalendar(rawOptions) {
   return {
     useMonthlyCalendar,
     useWeeklyCalendar,
-    useWeekdays: useWeekdays(options)
+    useWeekdays: useWeekdays(options),
+    factory: options.factory
   };
 }
 function normalizeGlobalParameters(opts) {

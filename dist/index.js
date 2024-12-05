@@ -99,8 +99,6 @@ function generateCalendarFactory(customFactory) {
       isWeekend: weekDay === 0 || weekDay > 6,
       otherMonth: false,
       disabled: (0, import_vue.ref)(false),
-      selectionType: (0, import_vue.ref)(null),
-      rangeSibling: (0, import_vue.ref)(null),
       isSelected: (0, import_vue.ref)(false),
       isBetween: (0, import_vue.ref)(false),
       isHovered: (0, import_vue.ref)(false),
@@ -179,22 +177,20 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
       });
     }
   });
-  function updateSelection(calendarDate, type) {
+  function updateSelection(calendarDate) {
     const selectedDateIndex = selection.findIndex((date) => (0, import_date_fns4.isSameDay)(calendarDate.date, date));
     if (selectedDateIndex >= 0) {
-      calendarDate.selectionType.value = null;
       selection.splice(selectedDateIndex, 1);
     } else {
-      calendarDate.selectionType.value = type;
       selection.push(calendarDate.date);
     }
   }
   function selectSingle(clickedDate) {
     const selectedDate = days.value.find((day) => (0, import_date_fns4.isSameDay)(day.date, selection[0]));
     if (selectedDate) {
-      updateSelection(selectedDate, "single" /* Single */);
+      updateSelection(selectedDate);
     }
-    updateSelection(clickedDate, "single" /* Single */);
+    updateSelection(clickedDate);
   }
   function selectRange(clickedDate, options = {}) {
     const { strict = false, multiple = false } = options;
@@ -231,12 +227,12 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
       selectionRanges.splice(-1);
     }
     clickedDate.isSelected.value = !clickedDate.isSelected.value;
-    updateSelection(clickedDate, "range" /* Range */);
+    updateSelection(clickedDate);
     selectionRanges.push(clickedDate.date);
   }
   function selectMultiple(clickedDate) {
     clickedDate.isSelected.value = !clickedDate.isSelected.value;
-    updateSelection(clickedDate, "multiple" /* Multiple */);
+    updateSelection(clickedDate);
   }
   function hoverMultiple(hoveredDate, options = {}) {
     const { strict = false } = options;
@@ -296,7 +292,7 @@ function useNavigation(daysWrapper, generateWrapper, infinite = false) {
   const currentWrapperIndex = (0, import_vue3.ref)(0);
   const currentWrapper = (0, import_vue3.computed)(() => daysWrapper[currentWrapperIndex.value]);
   const prevWrapperEnabled = (0, import_vue3.computed)(() => infinite || currentWrapperIndex.value > 0);
-  const nextWrapperEnabled = (0, import_vue3.computed)(() => infinite || currentWrapperIndex.value < daysWrapper.length - 1);
+  const nextWrapperEnabled = (0, import_vue3.computed)(() => infinite || currentWrapperIndex.value < Math.max(...Object.keys(daysWrapper).map(Number)));
   function nextWrapper() {
     jumpTo(currentWrapper.value.index + 1);
   }
@@ -307,22 +303,14 @@ function useNavigation(daysWrapper, generateWrapper, infinite = false) {
     if (newWrapperIndex === currentWrapper.value.index) {
       return;
     }
-    let newIndex = daysWrapper.findIndex((wrap) => wrap.index === newWrapperIndex);
-    if (infinite && newIndex < 0) {
+    const index = daysWrapper.findIndex((day) => day.index === newWrapperIndex);
+    if (index >= 0) {
+      currentWrapperIndex.value = index;
+    } else {
       const newWrapper = generateWrapper(newWrapperIndex, currentWrapper);
-      if (newWrapperIndex === daysWrapper[0].index - 1) {
-        daysWrapper.unshift(newWrapper);
-        newIndex = 0;
-      } else if (newWrapperIndex === daysWrapper[daysWrapper.length - 1].index + 1) {
-        daysWrapper.push(newWrapper);
-        newIndex = daysWrapper.length - 1;
-      } else {
-        daysWrapper.splice(0, daysWrapper.length, newWrapper);
-        newIndex = 0;
-      }
+      daysWrapper.push(newWrapper);
+      currentWrapperIndex.value = daysWrapper.length - 1;
     }
-    currentWrapperIndex.value = -1;
-    currentWrapperIndex.value = Math.max(0, newIndex);
   }
   return {
     jumpTo,
@@ -502,7 +490,8 @@ function monthlyCalendar(globalOptions) {
       newCurrentMonth.month = Math.min(11, newCurrentMonth.month);
       jumpTo(currentMonthYearIndex.value);
     });
-    const days = (0, import_vue5.computed)(() => daysByMonths.flatMap((month) => month.days).filter(Boolean));
+    const days = (0, import_vue5.computed)(() => Object.values(daysByMonths).flatMap((month) => month.days).filter(Boolean));
+    const months = (0, import_vue5.computed)(() => Object.values(daysByMonths));
     const computeds = useComputeds(days);
     (0, import_vue5.watchEffect)(() => {
       disableExtendedDates(days.value, globalOptions.minDate, globalOptions.maxDate);
@@ -552,8 +541,11 @@ function weekGenerators(globalOptions) {
     return weeks;
   }
   function generateWeek(weekYearId) {
-    const weekRefDay = new Date(weekYearId.year, 0, weekYearId.weekNumber * 7);
-    const weekDays = generateConsecutiveDays((0, import_date_fns7.startOfWeek)(weekRefDay), (0, import_date_fns7.endOfWeek)(weekRefDay));
+    const weekRefDay = (0, import_date_fns7.setWeek)(new Date(weekYearId.year, 0, 0), weekYearId.weekNumber, { weekStartsOn: globalOptions.firstDayOfWeek });
+    const weekDays = generateConsecutiveDays(
+      (0, import_date_fns7.startOfWeek)(weekRefDay, { weekStartsOn: globalOptions.firstDayOfWeek }),
+      (0, import_date_fns7.endOfWeek)(weekRefDay, { weekStartsOn: globalOptions.firstDayOfWeek })
+    );
     const newWeek = weekFactory(weekDays);
     return newWeek;
   }
@@ -578,7 +570,7 @@ function weeklyCalendar(globalOptions) {
     );
     disableExtendedDates(weeklyDays, globalOptions.minDate, globalOptions.maxDate);
     const daysByWeeks = wrapByWeek(weeklyDays);
-    const days = (0, import_vue6.computed)(() => daysByWeeks.flatMap((week) => week.days));
+    const days = (0, import_vue6.computed)(() => Object.values(daysByWeeks).flatMap((week) => week.days));
     (0, import_vue6.watchEffect)(() => {
       disableExtendedDates(weeklyDays, globalOptions.minDate, globalOptions.maxDate);
     });
@@ -621,7 +613,8 @@ function useCalendar(rawOptions) {
   return {
     useMonthlyCalendar,
     useWeeklyCalendar,
-    useWeekdays: useWeekdays(options)
+    useWeekdays: useWeekdays(options),
+    factory: options.factory
   };
 }
 function normalizeGlobalParameters(opts) {

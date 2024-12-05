@@ -27,7 +27,7 @@ export function monthGenerators<C extends ICalendarDate> (globalOptions: Normali
    * @param days Sorted array of CalendarDate
    * @returns Array of months including the month, year and array of CalendarDate for that month
    */
-  function wrapByMonth (days: Array<C>, otherMonthsDays = false, fixedWeeks = false): Month[] {
+  function wrapByMonth (days: Array<C>, otherMonthsDays = false, fixedWeeks = false): Array<Month> {
     const allMonthYearsIndex = [...new Set(days.map(day => day.monthYearIndex))];
     const wrap: Month[] = shallowReactive([]);
 
@@ -45,7 +45,6 @@ export function monthGenerators<C extends ICalendarDate> (globalOptions: Normali
 
       wrap.push(monthFactory(monthDays));
     });
-
     return wrap;
   }
 

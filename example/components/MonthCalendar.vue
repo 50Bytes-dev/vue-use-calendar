@@ -81,7 +81,7 @@ const { useMonthlyCalendar, useWeekdays } = useCalendar({
   // preSelection: [new Date(2023, 5, 15), addDays(new Date(2023, 5, 15), 6)],
 });
 
-const { nextMonth, prevMonth, currentMonthAndYear, prevMonthEnabled, nextMonthEnabled, currentMonth, listeners, selectedDates } = useMonthlyCalendar({ infinite: true, fullWeeks: true, fixedWeeks: true });
+const { months, nextMonth, prevMonth, currentMonthAndYear, prevMonthEnabled, nextMonthEnabled, currentMonth, listeners, selectedDates } = useMonthlyCalendar({ infinite: true, fullWeeks: true, fixedWeeks: true });
 // selectedDates.splice(0, selectedDates.length, ...[new Date(2023, 5, 15), addDays(new Date(2023, 5, 15), 6)]);
 const weekdays = useWeekdays();
 

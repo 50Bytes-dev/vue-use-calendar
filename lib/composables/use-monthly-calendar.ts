@@ -58,7 +58,8 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
       jumpTo(currentMonthYearIndex.value);
     });
 
-    const days = computed(() => daysByMonths.flatMap(month => month.days).filter(Boolean));
+    const days = computed(() => Object.values(daysByMonths).flatMap(month => month.days).filter(Boolean));
+    const months = computed(() => Object.values(daysByMonths));
     const computeds = useComputeds(days);
 
     watchEffect(() => {

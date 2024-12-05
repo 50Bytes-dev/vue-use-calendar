@@ -1,18 +1,16 @@
 import { isToday } from "date-fns";
 import { Ref, ref } from "vue";
 
-export enum SelectionType {
+/* export enum SelectionType {
   Single = 'single',
   Multiple = 'multiple',
   Range = 'range',
-}
+} */
 
 export interface ICalendarDate {
   readonly date: Date;
   otherMonth: boolean;
   disabled: Ref<boolean>;
-  selectionType: Ref<SelectionType | null>;
-  rangeSibling: Ref<Date | null>;
   isSelected: Ref<boolean>;
   isBetween: Ref<boolean>;
   isHovered: Ref<boolean>;
@@ -40,8 +38,6 @@ export function generateCalendarFactory<C extends ICalendarDate> (customFactory?
       isWeekend: weekDay === 0 || weekDay > 6,
       otherMonth: false,
       disabled: ref(false),
-      selectionType: ref(null),
-      rangeSibling: ref(null),
       isSelected: ref(false),
       isBetween: ref(false),
       isHovered: ref(false),
