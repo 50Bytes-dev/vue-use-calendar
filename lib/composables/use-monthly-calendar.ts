@@ -1,4 +1,4 @@
-import { computed, reactive, ShallowReactive, watch, watchEffect } from "vue";
+import { computed, reactive, shallowReactive, ShallowReactive, watch, watchEffect } from "vue";
 import { startOfMonth, endOfMonth } from "date-fns";
 import { MonthlyCalendarComposable, MontlyOptions, Month, NormalizedCalendarOptions } from '../types';
 import { disableExtendedDates } from "../utils/utils";
@@ -58,8 +58,12 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
       jumpTo(currentMonthYearIndex.value);
     });
 
-    const days = computed(() => Object.values(daysByMonths).flatMap(month => month.days).filter(Boolean));
-    const months = computed(() => Object.values(daysByMonths));
+    const days = computed(() => daysByMonths.flatMap(month => month.days).filter(Boolean));
+    const months = computed(() => daysByMonths.toSorted((a, b) => a.index - b.index));
+    // watch(daysByMonths, () => {
+    //   months.sort((a, b) => a.index - b.index);
+    //   console.log('Months updated', months);
+    // }, { immediate: true, deep: true });
     const computeds = useComputeds(days);
 
     watchEffect(() => {
@@ -72,7 +76,7 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
       currentMonth: currentWrapper,
       currentMonthAndYear,
       currentMonthYearIndex,
-      months: daysByMonths,
+      months,
       days,
       jumpTo: jumpTo,
       nextMonth: nextWrapper,

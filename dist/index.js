@@ -490,8 +490,8 @@ function monthlyCalendar(globalOptions) {
       newCurrentMonth.month = Math.min(11, newCurrentMonth.month);
       jumpTo(currentMonthYearIndex.value);
     });
-    const days = (0, import_vue5.computed)(() => Object.values(daysByMonths).flatMap((month) => month.days).filter(Boolean));
-    const months = (0, import_vue5.computed)(() => Object.values(daysByMonths));
+    const days = (0, import_vue5.computed)(() => daysByMonths.flatMap((month) => month.days).filter(Boolean));
+    const months = (0, import_vue5.computed)(() => daysByMonths.toSorted((a, b) => a.index - b.index));
     const computeds = useComputeds(days);
     (0, import_vue5.watchEffect)(() => {
       disableExtendedDates(days.value, globalOptions.minDate, globalOptions.maxDate);
@@ -501,7 +501,7 @@ function monthlyCalendar(globalOptions) {
       currentMonth: currentWrapper,
       currentMonthAndYear,
       currentMonthYearIndex,
-      months: daysByMonths,
+      months,
       days,
       jumpTo,
       nextMonth: nextWrapper,
@@ -570,7 +570,8 @@ function weeklyCalendar(globalOptions) {
     );
     disableExtendedDates(weeklyDays, globalOptions.minDate, globalOptions.maxDate);
     const daysByWeeks = wrapByWeek(weeklyDays);
-    const days = (0, import_vue6.computed)(() => Object.values(daysByWeeks).flatMap((week) => week.days));
+    const days = (0, import_vue6.computed)(() => daysByWeeks.flatMap((week) => week.days));
+    const weeks = (0, import_vue6.computed)(() => daysByWeeks.toSorted((a, b) => a.index - b.index));
     (0, import_vue6.watchEffect)(() => {
       disableExtendedDates(weeklyDays, globalOptions.minDate, globalOptions.maxDate);
     });
@@ -592,7 +593,7 @@ function weeklyCalendar(globalOptions) {
       currentWeek: currentWrapper,
       currentWeekIndex,
       days,
-      weeks: daysByWeeks,
+      weeks,
       jumpTo,
       nextWeek: nextWrapper,
       prevWeek: prevWrapper,

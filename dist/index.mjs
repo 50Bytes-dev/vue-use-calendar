@@ -461,8 +461,8 @@ function monthlyCalendar(globalOptions) {
       newCurrentMonth.month = Math.min(11, newCurrentMonth.month);
       jumpTo(currentMonthYearIndex.value);
     });
-    const days = computed3(() => Object.values(daysByMonths).flatMap((month) => month.days).filter(Boolean));
-    const months = computed3(() => Object.values(daysByMonths));
+    const days = computed3(() => daysByMonths.flatMap((month) => month.days).filter(Boolean));
+    const months = computed3(() => daysByMonths.toSorted((a, b) => a.index - b.index));
     const computeds = useComputeds(days);
     watchEffect(() => {
       disableExtendedDates(days.value, globalOptions.minDate, globalOptions.maxDate);
@@ -472,7 +472,7 @@ function monthlyCalendar(globalOptions) {
       currentMonth: currentWrapper,
       currentMonthAndYear,
       currentMonthYearIndex,
-      months: daysByMonths,
+      months,
       days,
       jumpTo,
       nextMonth: nextWrapper,
@@ -541,7 +541,8 @@ function weeklyCalendar(globalOptions) {
     );
     disableExtendedDates(weeklyDays, globalOptions.minDate, globalOptions.maxDate);
     const daysByWeeks = wrapByWeek(weeklyDays);
-    const days = computed4(() => Object.values(daysByWeeks).flatMap((week) => week.days));
+    const days = computed4(() => daysByWeeks.flatMap((week) => week.days));
+    const weeks = computed4(() => daysByWeeks.toSorted((a, b) => a.index - b.index));
     watchEffect2(() => {
       disableExtendedDates(weeklyDays, globalOptions.minDate, globalOptions.maxDate);
     });
@@ -563,7 +564,7 @@ function weeklyCalendar(globalOptions) {
       currentWeek: currentWrapper,
       currentWeekIndex,
       days,
-      weeks: daysByWeeks,
+      weeks,
       jumpTo,
       nextWeek: nextWrapper,
       prevWeek: prevWrapper,

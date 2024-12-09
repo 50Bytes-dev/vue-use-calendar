@@ -96,7 +96,7 @@ interface MonthlyCalendarComposable<C extends ICalendarDate> extends CalendarCom
     }>;
     currentMonth: ComputedRef<Month<C>>;
     currentMonthYearIndex: ComputedRef<number>;
-    months: ShallowReactive<Month<C>[]>;
+    months: ComputedRef<Month<C>[]>;
     jumpTo: (i: number) => void;
     nextMonth: () => void;
     prevMonth: () => void;
@@ -109,7 +109,7 @@ interface Week<C extends ICalendarDate = ICalendarDate> extends WrappedDays<C> {
     year: number;
 }
 interface WeeklyCalendarComposable<C extends ICalendarDate> extends CalendarComposable<C> {
-    weeks: ShallowReactive<Array<Week<C>>>;
+    weeks: ComputedRef<Array<Week<C>>>;
     currentWeekIndex: ComputedRef<number>;
     currentWeek: ComputedRef<Week<C>>;
     jumpTo: (i: number) => void;
