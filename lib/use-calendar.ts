@@ -23,7 +23,9 @@ export function normalizeGlobalParameters<C extends ICalendarDate> (opts: Calend
   const minDate: Date | undefined = opts.minDate ? new Date(opts.minDate) : undefined;
   const maxDate: Date | undefined = opts.maxDate ? new Date(opts.maxDate) : undefined;
   const startOn: Date = opts.startOn ? new Date(opts.startOn) : (minDate || new Date());
-  const disabled: Date[] = unref(unref(opts.disabled))?.map(dis => new Date(dis)) || [];
+  // const disabled: Date[] = unref(unref(opts.disabled))?.map(dis => new Date(dis)) || [];
+  const disabledUnref = unref(unref(opts.disabled));
+  const disabled: Date[] | ((date: Date) => boolean) = Array.isArray(disabledUnref) ? disabledUnref.map(dis => new Date(dis)) : disabledUnref || [];
   const preSelection: Date[] = (Array.isArray(opts.preSelection) ? opts.preSelection : [opts.preSelection]).filter(Boolean) as Array<Date>;
   const factory = generateCalendarFactory(opts.factory);
   const firstDayOfWeek: FirstDayOfWeek = opts.firstDayOfWeek || 0;

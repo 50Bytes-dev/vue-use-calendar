@@ -28,7 +28,7 @@ function generators(globalOptions) {
     }
     while (isBefore(((_a = dates[dates.length - 1]) == null ? void 0 : _a.date) || 0, to)) {
       const date = globalOptions.factory(from.getFullYear(), from.getMonth(), dayIndex++);
-      date.disabled.value = globalOptions.disabled.some((disabled) => isSameDay(date.date, disabled));
+      date.disabled.value = Array.isArray(globalOptions.disabled) ? globalOptions.disabled.some((disabled) => isSameDay(date.date, disabled)) : globalOptions.disabled(date.date);
       dates.push(date);
     }
     return dates;
@@ -590,11 +590,11 @@ function useCalendar(rawOptions) {
   };
 }
 function normalizeGlobalParameters(opts) {
-  var _a;
   const minDate = opts.minDate ? new Date(opts.minDate) : void 0;
   const maxDate = opts.maxDate ? new Date(opts.maxDate) : void 0;
   const startOn = opts.startOn ? new Date(opts.startOn) : minDate || new Date();
-  const disabled = ((_a = unref(unref(opts.disabled))) == null ? void 0 : _a.map((dis) => new Date(dis))) || [];
+  const disabledUnref = unref(unref(opts.disabled));
+  const disabled = Array.isArray(disabledUnref) ? disabledUnref.map((dis) => new Date(dis)) : disabledUnref || [];
   const preSelection = (Array.isArray(opts.preSelection) ? opts.preSelection : [opts.preSelection]).filter(Boolean);
   const factory = generateCalendarFactory(opts.factory);
   const firstDayOfWeek = opts.firstDayOfWeek || 0;

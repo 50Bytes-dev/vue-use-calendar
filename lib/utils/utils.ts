@@ -16,7 +16,9 @@ export function generators<C extends ICalendarDate> (globalOptions: NormalizedCa
 
     while (isBefore(dates[dates.length - 1]?.date || 0, to)) {
       const date = globalOptions.factory(from.getFullYear(), from.getMonth(), dayIndex++);
-      date.disabled.value = globalOptions.disabled.some(disabled => isSameDay(date.date, disabled) );
+      date.disabled.value = Array.isArray(globalOptions.disabled) 
+        ? globalOptions.disabled.some(disabled => isSameDay(date.date, disabled) )
+        : globalOptions.disabled(date.date);
       dates.push(date);
     }
 

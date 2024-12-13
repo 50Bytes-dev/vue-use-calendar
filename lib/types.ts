@@ -25,7 +25,7 @@ export interface CalendarOptions<C extends ICalendarDate = ICalendarDate> {
   startOn?: DateInput;
   minDate?: DateInput;
   maxDate?: DateInput;
-  disabled?: Array<DateInput>;
+  disabled?: Array<DateInput> | ((date: Date) => boolean);
   firstDayOfWeek?: FirstDayOfWeek;
   locale?: Locale;
   preSelection?: Array<Date> | Date;
@@ -36,7 +36,7 @@ export interface NormalizedCalendarOptions<C extends ICalendarDate = ICalendarDa
   startOn: Date;
   minDate?: Date;
   maxDate?: Date;
-  disabled: Array<Date>;
+  disabled: Array<Date> | ((date: Date) => boolean);
   firstDayOfWeek: FirstDayOfWeek;
   locale?: Locale;
   preSelection: Array<Date>;
