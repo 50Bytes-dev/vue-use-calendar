@@ -1,5 +1,5 @@
 import { computed, ComputedRef, reactive, watch } from 'vue';
-import { isSameDay } from 'date-fns';
+import { isEqual, isSameDay } from 'date-fns';
 import { ICalendarDate } from "../models/CalendarDate";
 import { Selectors, Computeds, SelectRangeOptions, HoverMultipleOptions } from "../types";
 import { getBetweenDays } from "../utils/utils";
@@ -41,7 +41,7 @@ export function useSelectors<C extends ICalendarDate> (
   watch(selection, () => {
     days.value.forEach((day) => {
       // TODO Optimize to avoid full array loop
-      day.isSelected.value = selection.some(selected => isSameDay(selected, day.date));
+      day.isSelected.value = selection.some(selected => isEqual(selected, day.date));
     });
 
     betweenDates.value.forEach(betweenDate => {
@@ -50,7 +50,7 @@ export function useSelectors<C extends ICalendarDate> (
 
     const selectedDateRanges: Array<C> = [];
     for (let i = 0; i < selectionRanges.length; i++) {
-      const found = selectedDates.value.find(day => isSameDay(day.date, selectionRanges[i]));
+      const found = selectedDates.value.find(day => isEqual(day.date, selectionRanges[i]));
       if (found) {
         selectedDateRanges.push(found);
       }
@@ -71,7 +71,7 @@ export function useSelectors<C extends ICalendarDate> (
   });
 
   function updateSelection (calendarDate: C) {
-    const selectedDateIndex = selection.findIndex(date => isSameDay(calendarDate.date, date));
+    const selectedDateIndex = selection.findIndex(date => isEqual(calendarDate.date, date));
     if (selectedDateIndex >= 0) {
       selection.splice(selectedDateIndex, 1);
     } else {
@@ -80,7 +80,7 @@ export function useSelectors<C extends ICalendarDate> (
   }
 
   function selectSingle(clickedDate: C) {
-    const selectedDate = days.value.find(day => isSameDay(day.date, selection[0]));
+    const selectedDate = days.value.find(day => isEqual(day.date, selection[0]));
     if (selectedDate) {
       updateSelection(selectedDate);
     }
@@ -93,7 +93,7 @@ export function useSelectors<C extends ICalendarDate> (
     if (strict) {
       const selectedDateRanges: Array<C> = [];
       for (let i = 0; i < selectionRanges.length; i++) {
-        const found = selectedDates.value.find(day => isSameDay(day.date, selectionRanges[i]));
+        const found = selectedDates.value.find(day => isEqual(day.date, selectionRanges[i]));
         if (found) {
           selectedDateRanges.push(found);
         }
@@ -104,7 +104,7 @@ export function useSelectors<C extends ICalendarDate> (
         const secondDate = selectedDateRanges[i + 1] || clickedDate;
 
         if (!firstDate || !secondDate) { continue; }
-        if (!(isSameDay(firstDate.date, clickedDate.date) || isSameDay(secondDate.date, clickedDate.date))) { continue; }
+        if (!(isEqual(firstDate.date, clickedDate.date) || isEqual(secondDate.date, clickedDate.date))) { continue; }
   
         const daysBetween = getBetweenDays(days.value, firstDate, secondDate);
         if (daysBetween.some(day => day.disabled.value || day.isBetween.value)) {
@@ -145,7 +145,7 @@ export function useSelectors<C extends ICalendarDate> (
     });
 
     const lastSelectedDate = selection[selection.length - 1];
-    const lastSelectedCalendarDate = days.value.find(day => isSameDay(day.date, lastSelectedDate));
+    const lastSelectedCalendarDate = days.value.find(day => isEqual(day.date, lastSelectedDate));
     if (!lastSelectedCalendarDate) {
       return;
     }
@@ -155,7 +155,7 @@ export function useSelectors<C extends ICalendarDate> (
       lastSelectedCalendarDate,
       ...getBetweenDays(days.value, lastSelectedCalendarDate, hoveredDate),
     ];
-    if (strict && datesToHover.some(day => (day.disabled.value || day.isSelected.value || day.isBetween.value) && !isSameDay(day.date, lastSelectedDate))) {
+    if (strict && datesToHover.some(day => (day.disabled.value || day.isSelected.value || day.isBetween.value) && !isEqual(day.date, lastSelectedDate))) {
       return;
     }
     datesToHover.forEach(day => {

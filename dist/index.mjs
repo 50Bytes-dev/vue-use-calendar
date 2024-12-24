@@ -16,7 +16,7 @@ import { computed as computed3, reactive as reactive2, watch as watch2, watchEff
 import { startOfMonth as startOfMonth2, endOfMonth as endOfMonth2 } from "date-fns";
 
 // lib/utils/utils.ts
-import { isAfter, isBefore, isSameDay } from "date-fns";
+import { isAfter, isBefore, isEqual } from "date-fns";
 function generators(globalOptions) {
   function generateConsecutiveDays(from, to) {
     var _a;
@@ -28,7 +28,7 @@ function generators(globalOptions) {
     }
     while (isBefore(((_a = dates[dates.length - 1]) == null ? void 0 : _a.date) || 0, to)) {
       const date = globalOptions.factory(from.getFullYear(), from.getMonth(), dayIndex++);
-      date.disabled.value = Array.isArray(globalOptions.disabled) ? globalOptions.disabled.some((disabled) => isSameDay(date.date, disabled)) : globalOptions.disabled(date.date);
+      date.disabled.value = Array.isArray(globalOptions.disabled) ? globalOptions.disabled.some((disabled) => isEqual(date.date, disabled)) : globalOptions.disabled(date.date);
       dates.push(date);
     }
     return dates;
@@ -38,14 +38,14 @@ function generators(globalOptions) {
   };
 }
 function getBetweenDays(pureDates, first, second) {
-  const firstSelectedDayIndex = pureDates.findIndex((day) => isSameDay(day.date, first.date));
-  const secondSelectedDayIndex = pureDates.findIndex((day) => isSameDay(day.date, second.date));
+  const firstSelectedDayIndex = pureDates.findIndex((day) => isEqual(day.date, first.date));
+  const secondSelectedDayIndex = pureDates.findIndex((day) => isEqual(day.date, second.date));
   const [lowestDate, greatestDate] = [firstSelectedDayIndex, secondSelectedDayIndex].sort((a, b) => a - b);
   return pureDates.slice(lowestDate + 1, greatestDate);
 }
 function disableExtendedDates(dates, from, to) {
-  const beforeFromDates = from ? dates.slice(0, dates.findIndex((day) => isSameDay(day.date, from))) : [];
-  const afterToDates = to ? dates.slice(dates.findIndex((day) => isSameDay(day.date, to))) : [];
+  const beforeFromDates = from ? dates.slice(0, dates.findIndex((day) => isEqual(day.date, from))) : [];
+  const afterToDates = to ? dates.slice(dates.findIndex((day) => isEqual(day.date, to))) : [];
   [...beforeFromDates, ...afterToDates].forEach((day) => {
     day.disabled.value = true;
   });
@@ -98,7 +98,7 @@ function monthFromMonthYear(monthYear) {
 
 // lib/composables/reactiveDates.ts
 import { computed, reactive, watch } from "vue";
-import { isSameDay as isSameDay2 } from "date-fns";
+import { isEqual as isEqual2 } from "date-fns";
 function useComputeds(days) {
   const pureDates = computed(() => {
     return days.value.filter((day) => !day._copied);
@@ -124,14 +124,14 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
   const selectionRanges = reactive([]);
   watch(selection, () => {
     days.value.forEach((day) => {
-      day.isSelected.value = selection.some((selected) => isSameDay2(selected, day.date));
+      day.isSelected.value = selection.some((selected) => isEqual2(selected, day.date));
     });
     betweenDates.value.forEach((betweenDate) => {
       betweenDate.isBetween.value = false;
     });
     const selectedDateRanges = [];
     for (let i = 0; i < selectionRanges.length; i++) {
-      const found = selectedDates.value.find((day) => isSameDay2(day.date, selectionRanges[i]));
+      const found = selectedDates.value.find((day) => isEqual2(day.date, selectionRanges[i]));
       if (found) {
         selectedDateRanges.push(found);
       }
@@ -149,7 +149,7 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
     }
   });
   function updateSelection(calendarDate) {
-    const selectedDateIndex = selection.findIndex((date) => isSameDay2(calendarDate.date, date));
+    const selectedDateIndex = selection.findIndex((date) => isEqual2(calendarDate.date, date));
     if (selectedDateIndex >= 0) {
       selection.splice(selectedDateIndex, 1);
     } else {
@@ -157,7 +157,7 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
     }
   }
   function selectSingle(clickedDate) {
-    const selectedDate = days.value.find((day) => isSameDay2(day.date, selection[0]));
+    const selectedDate = days.value.find((day) => isEqual2(day.date, selection[0]));
     if (selectedDate) {
       updateSelection(selectedDate);
     }
@@ -169,7 +169,7 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
     if (strict) {
       const selectedDateRanges = [];
       for (let i = 0; i < selectionRanges.length; i++) {
-        const found = selectedDates.value.find((day) => isSameDay2(day.date, selectionRanges[i]));
+        const found = selectedDates.value.find((day) => isEqual2(day.date, selectionRanges[i]));
         if (found) {
           selectedDateRanges.push(found);
         }
@@ -180,7 +180,7 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
         if (!firstDate || !secondDate) {
           continue;
         }
-        if (!(isSameDay2(firstDate.date, clickedDate.date) || isSameDay2(secondDate.date, clickedDate.date))) {
+        if (!(isEqual2(firstDate.date, clickedDate.date) || isEqual2(secondDate.date, clickedDate.date))) {
           continue;
         }
         const daysBetween = getBetweenDays(days.value, firstDate, secondDate);
@@ -214,7 +214,7 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
       day.isHovered.value = false;
     });
     const lastSelectedDate = selection[selection.length - 1];
-    const lastSelectedCalendarDate = days.value.find((day) => isSameDay2(day.date, lastSelectedDate));
+    const lastSelectedCalendarDate = days.value.find((day) => isEqual2(day.date, lastSelectedDate));
     if (!lastSelectedCalendarDate) {
       return;
     }
@@ -223,7 +223,7 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
       lastSelectedCalendarDate,
       ...getBetweenDays(days.value, lastSelectedCalendarDate, hoveredDate)
     ];
-    if (strict && datesToHover.some((day) => (day.disabled.value || day.isSelected.value || day.isBetween.value) && !isSameDay2(day.date, lastSelectedDate))) {
+    if (strict && datesToHover.some((day) => (day.disabled.value || day.isSelected.value || day.isBetween.value) && !isEqual2(day.date, lastSelectedDate))) {
       return;
     }
     datesToHover.forEach((day) => {
@@ -423,6 +423,7 @@ function monthlyCalendar(globalOptions) {
       startOfMonth2(globalOptions.startOn),
       endOfMonth2(globalOptions.maxDate || globalOptions.startOn)
     );
+    console.log("generateConsecutiveDays", monthlyDays);
     const daysByMonths = wrapByMonth(monthlyDays, fullWeeks, fixedWeeks);
     const {
       currentWrapper,

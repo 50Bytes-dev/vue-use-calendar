@@ -57,7 +57,7 @@ function generators(globalOptions) {
     }
     while ((0, import_date_fns2.isBefore)(((_a = dates[dates.length - 1]) == null ? void 0 : _a.date) || 0, to)) {
       const date = globalOptions.factory(from.getFullYear(), from.getMonth(), dayIndex++);
-      date.disabled.value = Array.isArray(globalOptions.disabled) ? globalOptions.disabled.some((disabled) => (0, import_date_fns2.isSameDay)(date.date, disabled)) : globalOptions.disabled(date.date);
+      date.disabled.value = Array.isArray(globalOptions.disabled) ? globalOptions.disabled.some((disabled) => (0, import_date_fns2.isEqual)(date.date, disabled)) : globalOptions.disabled(date.date);
       dates.push(date);
     }
     return dates;
@@ -67,14 +67,14 @@ function generators(globalOptions) {
   };
 }
 function getBetweenDays(pureDates, first, second) {
-  const firstSelectedDayIndex = pureDates.findIndex((day) => (0, import_date_fns2.isSameDay)(day.date, first.date));
-  const secondSelectedDayIndex = pureDates.findIndex((day) => (0, import_date_fns2.isSameDay)(day.date, second.date));
+  const firstSelectedDayIndex = pureDates.findIndex((day) => (0, import_date_fns2.isEqual)(day.date, first.date));
+  const secondSelectedDayIndex = pureDates.findIndex((day) => (0, import_date_fns2.isEqual)(day.date, second.date));
   const [lowestDate, greatestDate] = [firstSelectedDayIndex, secondSelectedDayIndex].sort((a, b) => a - b);
   return pureDates.slice(lowestDate + 1, greatestDate);
 }
 function disableExtendedDates(dates, from, to) {
-  const beforeFromDates = from ? dates.slice(0, dates.findIndex((day) => (0, import_date_fns2.isSameDay)(day.date, from))) : [];
-  const afterToDates = to ? dates.slice(dates.findIndex((day) => (0, import_date_fns2.isSameDay)(day.date, to))) : [];
+  const beforeFromDates = from ? dates.slice(0, dates.findIndex((day) => (0, import_date_fns2.isEqual)(day.date, from))) : [];
+  const afterToDates = to ? dates.slice(dates.findIndex((day) => (0, import_date_fns2.isEqual)(day.date, to))) : [];
   [...beforeFromDates, ...afterToDates].forEach((day) => {
     day.disabled.value = true;
   });
@@ -153,14 +153,14 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
   const selectionRanges = (0, import_vue2.reactive)([]);
   (0, import_vue2.watch)(selection, () => {
     days.value.forEach((day) => {
-      day.isSelected.value = selection.some((selected) => (0, import_date_fns4.isSameDay)(selected, day.date));
+      day.isSelected.value = selection.some((selected) => (0, import_date_fns4.isEqual)(selected, day.date));
     });
     betweenDates.value.forEach((betweenDate) => {
       betweenDate.isBetween.value = false;
     });
     const selectedDateRanges = [];
     for (let i = 0; i < selectionRanges.length; i++) {
-      const found = selectedDates.value.find((day) => (0, import_date_fns4.isSameDay)(day.date, selectionRanges[i]));
+      const found = selectedDates.value.find((day) => (0, import_date_fns4.isEqual)(day.date, selectionRanges[i]));
       if (found) {
         selectedDateRanges.push(found);
       }
@@ -178,7 +178,7 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
     }
   });
   function updateSelection(calendarDate) {
-    const selectedDateIndex = selection.findIndex((date) => (0, import_date_fns4.isSameDay)(calendarDate.date, date));
+    const selectedDateIndex = selection.findIndex((date) => (0, import_date_fns4.isEqual)(calendarDate.date, date));
     if (selectedDateIndex >= 0) {
       selection.splice(selectedDateIndex, 1);
     } else {
@@ -186,7 +186,7 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
     }
   }
   function selectSingle(clickedDate) {
-    const selectedDate = days.value.find((day) => (0, import_date_fns4.isSameDay)(day.date, selection[0]));
+    const selectedDate = days.value.find((day) => (0, import_date_fns4.isEqual)(day.date, selection[0]));
     if (selectedDate) {
       updateSelection(selectedDate);
     }
@@ -198,7 +198,7 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
     if (strict) {
       const selectedDateRanges = [];
       for (let i = 0; i < selectionRanges.length; i++) {
-        const found = selectedDates.value.find((day) => (0, import_date_fns4.isSameDay)(day.date, selectionRanges[i]));
+        const found = selectedDates.value.find((day) => (0, import_date_fns4.isEqual)(day.date, selectionRanges[i]));
         if (found) {
           selectedDateRanges.push(found);
         }
@@ -209,7 +209,7 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
         if (!firstDate || !secondDate) {
           continue;
         }
-        if (!((0, import_date_fns4.isSameDay)(firstDate.date, clickedDate.date) || (0, import_date_fns4.isSameDay)(secondDate.date, clickedDate.date))) {
+        if (!((0, import_date_fns4.isEqual)(firstDate.date, clickedDate.date) || (0, import_date_fns4.isEqual)(secondDate.date, clickedDate.date))) {
           continue;
         }
         const daysBetween = getBetweenDays(days.value, firstDate, secondDate);
@@ -243,7 +243,7 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
       day.isHovered.value = false;
     });
     const lastSelectedDate = selection[selection.length - 1];
-    const lastSelectedCalendarDate = days.value.find((day) => (0, import_date_fns4.isSameDay)(day.date, lastSelectedDate));
+    const lastSelectedCalendarDate = days.value.find((day) => (0, import_date_fns4.isEqual)(day.date, lastSelectedDate));
     if (!lastSelectedCalendarDate) {
       return;
     }
@@ -252,7 +252,7 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
       lastSelectedCalendarDate,
       ...getBetweenDays(days.value, lastSelectedCalendarDate, hoveredDate)
     ];
-    if (strict && datesToHover.some((day) => (day.disabled.value || day.isSelected.value || day.isBetween.value) && !(0, import_date_fns4.isSameDay)(day.date, lastSelectedDate))) {
+    if (strict && datesToHover.some((day) => (day.disabled.value || day.isSelected.value || day.isBetween.value) && !(0, import_date_fns4.isEqual)(day.date, lastSelectedDate))) {
       return;
     }
     datesToHover.forEach((day) => {
@@ -452,6 +452,7 @@ function monthlyCalendar(globalOptions) {
       (0, import_date_fns6.startOfMonth)(globalOptions.startOn),
       (0, import_date_fns6.endOfMonth)(globalOptions.maxDate || globalOptions.startOn)
     );
+    console.log("generateConsecutiveDays", monthlyDays);
     const daysByMonths = wrapByMonth(monthlyDays, fullWeeks, fixedWeeks);
     const {
       currentWrapper,
