@@ -423,7 +423,6 @@ function monthlyCalendar(globalOptions) {
       startOfMonth2(globalOptions.startOn),
       endOfMonth2(globalOptions.maxDate || globalOptions.startOn)
     );
-    console.log("generateConsecutiveDays", monthlyDays);
     const daysByMonths = wrapByMonth(monthlyDays, fullWeeks, fixedWeeks);
     const {
       currentWrapper,
