@@ -98,20 +98,19 @@ function monthFromMonthYear(monthYear) {
 }
 
 // lib/composables/reactiveDates.ts
-import { computed, reactive, ref as ref2, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { isEqual as isEqual2 } from "date-fns";
-function useComputeds(days, opts) {
+function useComputeds(days, preSelectedDays) {
   const pureDates = computed(() => {
     return days.value.filter((day) => !day._copied);
   });
   const selectedDates = computed(() => {
     const monthDates = pureDates.value.filter((day) => day.isSelected.value);
-    const preSelection = (Array.isArray(opts.preSelection) ? opts.preSelection : []).map((d) => opts.factory(d)).map((d) => ({ ...d, isSelected: ref2(true) }));
     const uniqueDates = {};
     monthDates.forEach((day) => {
       uniqueDates[day.date.toISOString()] = day;
     });
-    preSelection.forEach((day) => {
+    preSelectedDays.forEach((day) => {
       uniqueDates[day.date.toISOString()] = day;
     });
     return Object.values(uniqueDates);
@@ -129,7 +128,7 @@ function useComputeds(days, opts) {
     betweenDates
   };
 }
-function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
+function useSelectors(days, preSelectedDays, selectedDates, betweenDates, hoveredDates) {
   const selection = reactive([]);
   const selectionRanges = reactive([]);
   watch(selection, () => {
@@ -168,6 +167,12 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
       selection.splice(selectedDateIndex, 1);
     } else {
       selection.push(calendarDate.date);
+    }
+    const preSelectedDateIndex = preSelectedDays.findIndex((day) => isEqual2(day.date, calendarDate.date));
+    if (preSelectedDateIndex >= 0) {
+      preSelectedDays.splice(preSelectedDateIndex, 1);
+    } else {
+      preSelectedDays.push(calendarDate);
     }
   }
   function selectSingle(clickedDate) {
@@ -475,14 +480,16 @@ function monthlyCalendar(globalOptions) {
       newCurrentMonth.month = Math.min(11, newCurrentMonth.month);
       jumpTo(currentMonthYearIndex.value);
     });
+    const preSelectedDates = reactive2(globalOptions.preSelection.map((date) => globalOptions.factory(date)));
     const days = computed3(() => daysByMonths.flatMap((month) => month.days).filter(Boolean));
     const months = computed3(() => daysByMonths.toSorted((a, b) => a.index - b.index));
-    const computeds = useComputeds(days, globalOptions);
+    const computeds = useComputeds(days, preSelectedDates);
     watchEffect(() => {
       disableExtendedDates(days.value, globalOptions.minDate, globalOptions.maxDate);
     });
     const { selection, ...listeners } = useSelectors(
       computeds.pureDates,
+      preSelectedDates,
       computeds.selectedDates,
       computeds.betweenDates,
       computeds.hoveredDates

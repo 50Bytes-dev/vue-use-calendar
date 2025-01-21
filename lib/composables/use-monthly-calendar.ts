@@ -58,9 +58,11 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
       jumpTo(currentMonthYearIndex.value);
     });
 
+    const preSelectedDates = reactive(globalOptions.preSelection.map(date => globalOptions.factory(date)));
+
     const days = computed(() => daysByMonths.flatMap(month => month.days).filter(Boolean));
     const months = computed(() => daysByMonths.toSorted((a, b) => a.index - b.index));
-    const computeds = useComputeds(days, globalOptions);
+    const computeds = useComputeds(days, preSelectedDates as C[]);
 
     watchEffect(() => {
       disableExtendedDates(days.value, globalOptions.minDate, globalOptions.maxDate);
@@ -68,6 +70,7 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
 
     const { selection, ...listeners } = useSelectors(
       computeds.pureDates, 
+      preSelectedDates,
       computeds.selectedDates, 
       computeds.betweenDates, 
       computeds.hoveredDates,

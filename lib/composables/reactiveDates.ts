@@ -1,24 +1,21 @@
-import { computed, ComputedRef, reactive, ref, watch } from 'vue';
+import { computed, ComputedRef, Reactive, reactive, ref, watch } from 'vue';
 import { isEqual } from 'date-fns';
 import { ICalendarDate } from "../models/CalendarDate";
-import { Selectors, Computeds, SelectRangeOptions, HoverMultipleOptions, NormalizedCalendarOptions } from "../types";
+import { Selectors, Computeds, SelectRangeOptions, HoverMultipleOptions } from "../types";
 import { getBetweenDays } from "../utils/utils";
 
-export function useComputeds<C extends ICalendarDate> (days: ComputedRef<C[]>, opts: NormalizedCalendarOptions<C>): Computeds<C> {
+export function useComputeds<C extends ICalendarDate> (days: ComputedRef<C[]>, preSelectedDays: C[]): Computeds<C> {
   const pureDates = computed(() => {
     return days.value.filter(day => !day._copied);
   });
 
   const selectedDates = computed(() => {
     const monthDates = pureDates.value.filter(day => day.isSelected.value);
-    const preSelection = (Array.isArray(opts.preSelection) ? opts.preSelection : [])
-      .map(d => opts.factory(d))
-      .map(d => ({ ...d, isSelected: ref(true) }));
     const uniqueDates: Record<string, C> = {};
     monthDates.forEach(day => {
       uniqueDates[day.date.toISOString()] = day;
     });
-    preSelection.forEach(day => {
+    preSelectedDays.forEach(day => {
       uniqueDates[day.date.toISOString()] = day;
     });
     return Object.values(uniqueDates);
@@ -42,6 +39,7 @@ export function useComputeds<C extends ICalendarDate> (days: ComputedRef<C[]>, o
 
 export function useSelectors<C extends ICalendarDate> (
   days: ComputedRef<C[]>,
+  preSelectedDays: C[],
   selectedDates: ComputedRef<C[]>,
   betweenDates: ComputedRef<C[]>,
   hoveredDates: ComputedRef<C[]>,
@@ -92,6 +90,12 @@ export function useSelectors<C extends ICalendarDate> (
       selection.splice(selectedDateIndex, 1);
     } else {
       selection.push(calendarDate.date);
+    }
+    const preSelectedDateIndex = preSelectedDays.findIndex(day => isEqual(day.date, calendarDate.date));
+    if (preSelectedDateIndex >= 0) {
+      preSelectedDays.splice(preSelectedDateIndex, 1);
+    } else {
+      preSelectedDays.push(calendarDate);
     }
   }
 
