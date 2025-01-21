@@ -84,6 +84,10 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
       });
     }, { immediate: true, deep: true });
 
+    watch(() => globalOptions.preSelection, () => {
+      preSelectedDates.splice(0, preSelectedDates.length, ...(globalOptions.preSelection.map(date => globalOptions.factory(date)) as any));
+    });
+
     return {
       currentMonth: currentWrapper,
       currentMonthAndYear,

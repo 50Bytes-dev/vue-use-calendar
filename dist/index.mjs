@@ -160,6 +160,8 @@ function useSelectors(days, preSelectedDays, selectedDates, betweenDates, hovere
   watch(selectedDates, () => {
     selection.splice(0);
     selection.push(...selectedDates.value.map((day) => day.date));
+    selectionRanges.splice(0);
+    selectionRanges.push(...selectedDates.value.map((day) => day.date));
   }, { immediate: true });
   function updateSelection(calendarDate, updatePreSelected = true) {
     const selectedDateIndex = selection.findIndex((date) => isEqual2(calendarDate.date, date));
@@ -515,6 +517,9 @@ function monthlyCalendar(globalOptions) {
         generate(index);
       });
     }, { immediate: true, deep: true });
+    watch2(() => globalOptions.preSelection, () => {
+      preSelectedDates.splice(0, preSelectedDates.length, ...globalOptions.preSelection.map((date) => globalOptions.factory(date)));
+    });
     return {
       currentMonth: currentWrapper,
       currentMonthAndYear,
