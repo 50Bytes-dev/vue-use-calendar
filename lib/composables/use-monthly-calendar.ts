@@ -1,4 +1,4 @@
-import { computed, reactive, shallowReactive, ShallowReactive, watch, watchEffect } from "vue";
+import { computed, reactive, shallowReactive, ShallowReactive, unref, watch, watchEffect } from "vue";
 import { startOfMonth, endOfMonth } from "date-fns";
 import { MonthlyCalendarComposable, MontlyOptions, Month, NormalizedCalendarOptions } from '../types';
 import { disableExtendedDates } from "../utils/utils";
@@ -25,6 +25,7 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
       jumpTo,
       nextWrapper,
       prevWrapper,
+      generate,
       prevWrapperEnabled,
       nextWrapperEnabled,
     } = useNavigation(
@@ -75,6 +76,13 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
       computeds.betweenDates, 
       computeds.hoveredDates,
     );
+
+    watch(() => preSelectedDates, () => {
+      preSelectedDates.forEach(d => {
+        const index = dateToMonthYear(d.date.getFullYear(), d.date.getMonth());
+        generate(index);
+      });
+    }, { immediate: true, deep: true });
 
     return {
       currentMonth: currentWrapper,

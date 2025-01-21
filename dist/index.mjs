@@ -161,12 +161,15 @@ function useSelectors(days, preSelectedDays, selectedDates, betweenDates, hovere
     selection.splice(0);
     selection.push(...selectedDates.value.map((day) => day.date));
   }, { immediate: true });
-  function updateSelection(calendarDate) {
+  function updateSelection(calendarDate, updatePreSelected = true) {
     const selectedDateIndex = selection.findIndex((date) => isEqual2(calendarDate.date, date));
     if (selectedDateIndex >= 0) {
       selection.splice(selectedDateIndex, 1);
     } else {
       selection.push(calendarDate.date);
+    }
+    if (!updatePreSelected) {
+      return;
     }
     const preSelectedDateIndex = preSelectedDays.findIndex((day) => isEqual2(day.date, calendarDate.date));
     if (preSelectedDateIndex >= 0) {
@@ -209,15 +212,14 @@ function useSelectors(days, preSelectedDays, selectedDates, betweenDates, hovere
       }
     }
     if (!multiple && selection.length >= 2 && !clickedDate.isSelected.value) {
-      selection.splice(0);
-      selectionRanges.splice(0);
+      resetSelection();
     }
     if (!isValid) {
       selection.splice(-1);
       selectionRanges.splice(-1);
     }
     clickedDate.isSelected.value = !clickedDate.isSelected.value;
-    updateSelection(clickedDate);
+    updateSelection(clickedDate, false);
     selectionRanges.push(clickedDate.date);
   }
   function selectMultiple(clickedDate) {
@@ -258,6 +260,7 @@ function useSelectors(days, preSelectedDays, selectedDates, betweenDates, hovere
   function resetSelection() {
     selection.splice(0);
     selectionRanges.splice(0);
+    preSelectedDays.splice(0);
     selectedDates.value.forEach((day) => {
       day.isSelected.value = false;
     });
@@ -302,10 +305,21 @@ function useNavigation(daysWrapper, generateWrapper, infinite = false) {
       currentWrapperIndex.value = daysWrapper.length - 1;
     }
   }
+  function generate(newWrapperIndex) {
+    if (newWrapperIndex === currentWrapper.value.index) {
+      return;
+    }
+    const index = daysWrapper.findIndex((day) => day.index === newWrapperIndex);
+    if (index < 0) {
+      const newWrapper = generateWrapper(newWrapperIndex, currentWrapper);
+      daysWrapper.push(newWrapper);
+    }
+  }
   return {
     jumpTo,
     nextWrapper,
     prevWrapper,
+    generate,
     prevWrapperEnabled,
     nextWrapperEnabled,
     currentWrapper
@@ -448,6 +462,7 @@ function monthlyCalendar(globalOptions) {
       jumpTo,
       nextWrapper,
       prevWrapper,
+      generate,
       prevWrapperEnabled,
       nextWrapperEnabled
     } = useNavigation(
@@ -494,6 +509,12 @@ function monthlyCalendar(globalOptions) {
       computeds.betweenDates,
       computeds.hoveredDates
     );
+    watch2(() => preSelectedDates, () => {
+      preSelectedDates.forEach((d) => {
+        const index = dateToMonthYear(d.date.getFullYear(), d.date.getMonth());
+        generate(index);
+      });
+    }, { immediate: true, deep: true });
     return {
       currentMonth: currentWrapper,
       currentMonthAndYear,
@@ -603,7 +624,7 @@ function weeklyCalendar(globalOptions) {
 }
 
 // lib/use-calendar.ts
-import { unref } from "vue";
+import { unref as unref2 } from "vue";
 function useCalendar(rawOptions) {
   const options = normalizeGlobalParameters(rawOptions);
   const useMonthlyCalendar = monthlyCalendar(options);
@@ -619,7 +640,7 @@ function normalizeGlobalParameters(opts) {
   const minDate = opts.minDate ? new Date(opts.minDate) : void 0;
   const maxDate = opts.maxDate ? new Date(opts.maxDate) : void 0;
   const startOn = opts.startOn ? new Date(opts.startOn) : minDate || new Date();
-  const disabledUnref = unref(unref(opts.disabled));
+  const disabledUnref = unref2(unref2(opts.disabled));
   const disabled = Array.isArray(disabledUnref) ? disabledUnref.map((dis) => new Date(dis)) : disabledUnref || [];
   const preSelection = Array.isArray(opts.preSelection) ? opts.preSelection.map((pre) => new Date(pre)) : [];
   const factory = generateCalendarFactory(opts.factory);

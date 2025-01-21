@@ -82,15 +82,18 @@ export function useSelectors<C extends ICalendarDate> (
   watch(selectedDates, () => {
     selection.splice(0);
     selection.push(...selectedDates.value.map(day => day.date));
+    selectionRanges.splice(0);
+    selectionRanges.push(...selectedDates.value.map(day => day.date));
   }, { immediate: true });
 
-  function updateSelection(calendarDate: C) {
+  function updateSelection(calendarDate: C, updatePreSelected = true) {
     const selectedDateIndex = selection.findIndex(date => isEqual(calendarDate.date, date));
     if (selectedDateIndex >= 0) {
       selection.splice(selectedDateIndex, 1);
     } else {
       selection.push(calendarDate.date);
     }
+    if (!updatePreSelected) { return; }
     const preSelectedDateIndex = preSelectedDays.findIndex(day => isEqual(day.date, calendarDate.date));
     if (preSelectedDateIndex >= 0) {
       preSelectedDays.splice(preSelectedDateIndex, 1);
@@ -125,7 +128,7 @@ export function useSelectors<C extends ICalendarDate> (
 
         if (!firstDate || !secondDate) { continue; }
         if (!(isEqual(firstDate.date, clickedDate.date) || isEqual(secondDate.date, clickedDate.date))) { continue; }
-  
+
         const daysBetween = getBetweenDays(days.value, firstDate, secondDate);
         if (daysBetween.some(day => day.disabled.value || day.isBetween.value)) {
           isValid = false;
@@ -134,8 +137,7 @@ export function useSelectors<C extends ICalendarDate> (
     }
 
     if (!multiple && selection.length >= 2 && !clickedDate.isSelected.value) {
-      selection.splice(0);
-      selectionRanges.splice(0);
+      resetSelection();
     }
 
     if (!isValid) { 
@@ -144,7 +146,7 @@ export function useSelectors<C extends ICalendarDate> (
     }
 
     clickedDate.isSelected.value = !clickedDate.isSelected.value;
-    updateSelection(clickedDate);
+    updateSelection(clickedDate, false);
     selectionRanges.push(clickedDate.date);
   }
 
@@ -193,6 +195,7 @@ export function useSelectors<C extends ICalendarDate> (
   function resetSelection() {
     selection.splice(0);
     selectionRanges.splice(0);
+    preSelectedDays.splice(0);
     selectedDates.value.forEach(day => {
       day.isSelected.value = false;
     });

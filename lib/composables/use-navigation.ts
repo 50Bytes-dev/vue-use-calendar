@@ -29,10 +29,21 @@ export function useNavigation<T extends WrappedDays>(daysWrapper: ShallowReactiv
     }
   }
 
+  function generate(newWrapperIndex: number) {
+    if (newWrapperIndex === currentWrapper.value.index) { return; }
+    
+    const index = daysWrapper.findIndex(day => day.index === newWrapperIndex);
+    if (index < 0) {
+      const newWrapper = generateWrapper(newWrapperIndex, currentWrapper);
+      daysWrapper.push(newWrapper);
+    }
+  }
+
   return {
     jumpTo,
     nextWrapper,
     prevWrapper,
+    generate,
     prevWrapperEnabled,
     nextWrapperEnabled,
     currentWrapper,
