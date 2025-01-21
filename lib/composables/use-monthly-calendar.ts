@@ -70,7 +70,7 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
 
     const { selection, ...listeners } = useSelectors(
       computeds.pureDates, 
-      preSelectedDates,
+      preSelectedDates as C[],
       computeds.selectedDates, 
       computeds.betweenDates, 
       computeds.hoveredDates,
