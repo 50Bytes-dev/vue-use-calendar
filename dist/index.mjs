@@ -29,6 +29,7 @@ function generators(globalOptions) {
     while (isBefore(((_a = dates[dates.length - 1]) == null ? void 0 : _a.date) || 0, to)) {
       const date = globalOptions.factory(from.getFullYear(), from.getMonth(), dayIndex++);
       date.disabled.value = Array.isArray(globalOptions.disabled) ? globalOptions.disabled.some((disabled) => isEqual(date.date, disabled)) : globalOptions.disabled(date.date);
+      date.isSelected.value = globalOptions.preSelection.some((pre) => isEqual(date.date, pre));
       dates.push(date);
     }
     return dates;
@@ -97,14 +98,23 @@ function monthFromMonthYear(monthYear) {
 }
 
 // lib/composables/reactiveDates.ts
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, ref as ref2, watch } from "vue";
 import { isEqual as isEqual2 } from "date-fns";
-function useComputeds(days) {
+function useComputeds(days, opts) {
   const pureDates = computed(() => {
     return days.value.filter((day) => !day._copied);
   });
   const selectedDates = computed(() => {
-    return pureDates.value.filter((day) => day.isSelected.value);
+    const monthDates = pureDates.value.filter((day) => day.isSelected.value);
+    const preSelection = (Array.isArray(opts.preSelection) ? opts.preSelection : []).map((d) => opts.factory(d)).map((d) => ({ ...d, isSelected: ref2(true) }));
+    const uniqueDates = {};
+    monthDates.forEach((day) => {
+      uniqueDates[day.date.toISOString()] = day;
+    });
+    preSelection.forEach((day) => {
+      uniqueDates[day.date.toISOString()] = day;
+    });
+    return Object.values(uniqueDates);
   });
   const hoveredDates = computed(() => {
     return pureDates.value.filter((day) => day.isHovered.value);
@@ -148,6 +158,10 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
       });
     }
   });
+  watch(selectedDates, () => {
+    selection.splice(0);
+    selection.push(...selectedDates.value.map((day) => day.date));
+  }, { immediate: true });
   function updateSelection(calendarDate) {
     const selectedDateIndex = selection.findIndex((date) => isEqual2(calendarDate.date, date));
     if (selectedDateIndex >= 0) {
@@ -258,9 +272,9 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
 }
 
 // lib/composables/use-navigation.ts
-import { computed as computed2, ref as ref2 } from "vue";
+import { computed as computed2, ref as ref3 } from "vue";
 function useNavigation(daysWrapper, generateWrapper, infinite = false) {
-  const currentWrapperIndex = ref2(0);
+  const currentWrapperIndex = ref3(0);
   const currentWrapper = computed2(() => daysWrapper[currentWrapperIndex.value]);
   const prevWrapperEnabled = computed2(() => infinite || currentWrapperIndex.value > 0);
   const nextWrapperEnabled = computed2(() => infinite || currentWrapperIndex.value < Math.max(...Object.keys(daysWrapper).map(Number)));
@@ -463,11 +477,16 @@ function monthlyCalendar(globalOptions) {
     });
     const days = computed3(() => daysByMonths.flatMap((month) => month.days).filter(Boolean));
     const months = computed3(() => daysByMonths.toSorted((a, b) => a.index - b.index));
-    const computeds = useComputeds(days);
+    const computeds = useComputeds(days, globalOptions);
     watchEffect(() => {
       disableExtendedDates(days.value, globalOptions.minDate, globalOptions.maxDate);
     });
-    const { selection, ...listeners } = useSelectors(computeds.pureDates, computeds.selectedDates, computeds.betweenDates, computeds.hoveredDates);
+    const { selection, ...listeners } = useSelectors(
+      computeds.pureDates,
+      computeds.selectedDates,
+      computeds.betweenDates,
+      computeds.hoveredDates
+    );
     return {
       currentMonth: currentWrapper,
       currentMonthAndYear,
@@ -595,7 +614,7 @@ function normalizeGlobalParameters(opts) {
   const startOn = opts.startOn ? new Date(opts.startOn) : minDate || new Date();
   const disabledUnref = unref(unref(opts.disabled));
   const disabled = Array.isArray(disabledUnref) ? disabledUnref.map((dis) => new Date(dis)) : disabledUnref || [];
-  const preSelection = (Array.isArray(opts.preSelection) ? opts.preSelection : [opts.preSelection]).filter(Boolean);
+  const preSelection = Array.isArray(opts.preSelection) ? opts.preSelection.map((pre) => new Date(pre)) : [];
   const factory = generateCalendarFactory(opts.factory);
   const firstDayOfWeek = opts.firstDayOfWeek || 0;
   return { ...opts, startOn, firstDayOfWeek, minDate, maxDate, disabled, preSelection, factory };

@@ -60,17 +60,18 @@ export function monthlyCalendar<C extends ICalendarDate>(globalOptions: Normaliz
 
     const days = computed(() => daysByMonths.flatMap(month => month.days).filter(Boolean));
     const months = computed(() => daysByMonths.toSorted((a, b) => a.index - b.index));
-    // watch(daysByMonths, () => {
-    //   months.sort((a, b) => a.index - b.index);
-    //   console.log('Months updated', months);
-    // }, { immediate: true, deep: true });
-    const computeds = useComputeds(days);
+    const computeds = useComputeds(days, globalOptions);
 
     watchEffect(() => {
       disableExtendedDates(days.value, globalOptions.minDate, globalOptions.maxDate);
     });
 
-    const { selection, ...listeners } = useSelectors(computeds.pureDates, computeds.selectedDates, computeds.betweenDates, computeds.hoveredDates);
+    const { selection, ...listeners } = useSelectors(
+      computeds.pureDates, 
+      computeds.selectedDates, 
+      computeds.betweenDates, 
+      computeds.hoveredDates,
+    );
 
     return {
       currentMonth: currentWrapper,

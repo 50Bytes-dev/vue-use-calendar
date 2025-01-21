@@ -1,16 +1,27 @@
-import { computed, ComputedRef, reactive, watch } from 'vue';
-import { isEqual, isSameDay } from 'date-fns';
+import { computed, ComputedRef, reactive, ref, watch } from 'vue';
+import { isEqual } from 'date-fns';
 import { ICalendarDate } from "../models/CalendarDate";
-import { Selectors, Computeds, SelectRangeOptions, HoverMultipleOptions } from "../types";
+import { Selectors, Computeds, SelectRangeOptions, HoverMultipleOptions, NormalizedCalendarOptions } from "../types";
 import { getBetweenDays } from "../utils/utils";
 
-export function useComputeds<C extends ICalendarDate> (days: ComputedRef<C[]>): Computeds<C> {
+export function useComputeds<C extends ICalendarDate> (days: ComputedRef<C[]>, opts: NormalizedCalendarOptions<C>): Computeds<C> {
   const pureDates = computed(() => {
     return days.value.filter(day => !day._copied);
   });
 
   const selectedDates = computed(() => {
-    return pureDates.value.filter(day => day.isSelected.value);
+    const monthDates = pureDates.value.filter(day => day.isSelected.value);
+    const preSelection = (Array.isArray(opts.preSelection) ? opts.preSelection : [])
+      .map(d => opts.factory(d))
+      .map(d => ({ ...d, isSelected: ref(true) }));
+    const uniqueDates: Record<string, C> = {};
+    monthDates.forEach(day => {
+      uniqueDates[day.date.toISOString()] = day;
+    });
+    preSelection.forEach(day => {
+      uniqueDates[day.date.toISOString()] = day;
+    });
+    return Object.values(uniqueDates);
   });
 
   const hoveredDates = computed(() => {
@@ -70,7 +81,12 @@ export function useSelectors<C extends ICalendarDate> (
     }
   });
 
-  function updateSelection (calendarDate: C) {
+  watch(selectedDates, () => {
+    selection.splice(0);
+    selection.push(...selectedDates.value.map(day => day.date));
+  }, { immediate: true });
+
+  function updateSelection(calendarDate: C) {
     const selectedDateIndex = selection.findIndex(date => isEqual(calendarDate.date, date));
     if (selectedDateIndex >= 0) {
       selection.splice(selectedDateIndex, 1);

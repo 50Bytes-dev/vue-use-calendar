@@ -58,6 +58,7 @@ function generators(globalOptions) {
     while ((0, import_date_fns2.isBefore)(((_a = dates[dates.length - 1]) == null ? void 0 : _a.date) || 0, to)) {
       const date = globalOptions.factory(from.getFullYear(), from.getMonth(), dayIndex++);
       date.disabled.value = Array.isArray(globalOptions.disabled) ? globalOptions.disabled.some((disabled) => (0, import_date_fns2.isEqual)(date.date, disabled)) : globalOptions.disabled(date.date);
+      date.isSelected.value = globalOptions.preSelection.some((pre) => (0, import_date_fns2.isEqual)(date.date, pre));
       dates.push(date);
     }
     return dates;
@@ -128,12 +129,21 @@ function monthFromMonthYear(monthYear) {
 // lib/composables/reactiveDates.ts
 var import_vue2 = require("vue");
 var import_date_fns4 = require("date-fns");
-function useComputeds(days) {
+function useComputeds(days, opts) {
   const pureDates = (0, import_vue2.computed)(() => {
     return days.value.filter((day) => !day._copied);
   });
   const selectedDates = (0, import_vue2.computed)(() => {
-    return pureDates.value.filter((day) => day.isSelected.value);
+    const monthDates = pureDates.value.filter((day) => day.isSelected.value);
+    const preSelection = (Array.isArray(opts.preSelection) ? opts.preSelection : []).map((d) => opts.factory(d)).map((d) => ({ ...d, isSelected: (0, import_vue2.ref)(true) }));
+    const uniqueDates = {};
+    monthDates.forEach((day) => {
+      uniqueDates[day.date.toISOString()] = day;
+    });
+    preSelection.forEach((day) => {
+      uniqueDates[day.date.toISOString()] = day;
+    });
+    return Object.values(uniqueDates);
   });
   const hoveredDates = (0, import_vue2.computed)(() => {
     return pureDates.value.filter((day) => day.isHovered.value);
@@ -177,6 +187,10 @@ function useSelectors(days, selectedDates, betweenDates, hoveredDates) {
       });
     }
   });
+  (0, import_vue2.watch)(selectedDates, () => {
+    selection.splice(0);
+    selection.push(...selectedDates.value.map((day) => day.date));
+  }, { immediate: true });
   function updateSelection(calendarDate) {
     const selectedDateIndex = selection.findIndex((date) => (0, import_date_fns4.isEqual)(calendarDate.date, date));
     if (selectedDateIndex >= 0) {
@@ -492,11 +506,16 @@ function monthlyCalendar(globalOptions) {
     });
     const days = (0, import_vue5.computed)(() => daysByMonths.flatMap((month) => month.days).filter(Boolean));
     const months = (0, import_vue5.computed)(() => daysByMonths.toSorted((a, b) => a.index - b.index));
-    const computeds = useComputeds(days);
+    const computeds = useComputeds(days, globalOptions);
     (0, import_vue5.watchEffect)(() => {
       disableExtendedDates(days.value, globalOptions.minDate, globalOptions.maxDate);
     });
-    const { selection, ...listeners } = useSelectors(computeds.pureDates, computeds.selectedDates, computeds.betweenDates, computeds.hoveredDates);
+    const { selection, ...listeners } = useSelectors(
+      computeds.pureDates,
+      computeds.selectedDates,
+      computeds.betweenDates,
+      computeds.hoveredDates
+    );
     return {
       currentMonth: currentWrapper,
       currentMonthAndYear,
@@ -624,7 +643,7 @@ function normalizeGlobalParameters(opts) {
   const startOn = opts.startOn ? new Date(opts.startOn) : minDate || new Date();
   const disabledUnref = (0, import_vue7.unref)((0, import_vue7.unref)(opts.disabled));
   const disabled = Array.isArray(disabledUnref) ? disabledUnref.map((dis) => new Date(dis)) : disabledUnref || [];
-  const preSelection = (Array.isArray(opts.preSelection) ? opts.preSelection : [opts.preSelection]).filter(Boolean);
+  const preSelection = Array.isArray(opts.preSelection) ? opts.preSelection.map((pre) => new Date(pre)) : [];
   const factory = generateCalendarFactory(opts.factory);
   const firstDayOfWeek = opts.firstDayOfWeek || 0;
   return { ...opts, startOn, firstDayOfWeek, minDate, maxDate, disabled, preSelection, factory };

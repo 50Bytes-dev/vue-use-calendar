@@ -19,6 +19,7 @@ export function generators<C extends ICalendarDate> (globalOptions: NormalizedCa
       date.disabled.value = Array.isArray(globalOptions.disabled) 
         ? globalOptions.disabled.some(disabled => isEqual(date.date, disabled) )
         : globalOptions.disabled(date.date);
+      date.isSelected.value = globalOptions.preSelection.some(pre => isEqual(date.date, pre));
       dates.push(date);
     }
 
